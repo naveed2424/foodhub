@@ -1,0 +1,69 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Yuletide Table – Global Christmas Food & Culinary Journal</title>
+    <meta
+      name="description"
+      content="Explore authentic traditional Christmas recipes across Europe, Australia, South & North America with an interactive map, dietary filters, and daily SEO-optimized festive food news."
+    />
+    <meta property="og:type" content="website" />
+    <meta property="og:site_name" content="Yuletide Table" />
+    <meta property="og:title" content="Yuletide Table – Global Christmas Food & Culinary Journal" />
+    <meta
+      property="og:description"
+      content="Explore authentic traditional Christmas recipes across Europe, Australia, South & North America with an interactive map, dietary filters, and daily SEO-optimized festive food news."
+    />
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content="Yuletide Table – Global Christmas Food & Culinary Journal" />
+    <meta
+      name="twitter:description"
+      content="Explore authentic traditional Christmas recipes across Europe, Australia, South & North America with an interactive map, dietary filters, and daily SEO-optimized festive food news."
+    />
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400..900;1,400..900&family=Plus+Jakarta+Sans:ital,wght@0,300..800;1,300..800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+    <script>
+      // Browser Extension / Sandbox Interceptor compatibility fix
+      (function() {
+        try {
+          var origFetch = window.fetch;
+          var _f = typeof origFetch === 'function' ? origFetch.bind(window) : origFetch;
+          Object.defineProperty(window, 'fetch', {
+            configurable: true,
+            enumerable: true,
+            get: function() {
+              return _f;
+            },
+            set: function(val) {
+              _f = val;
+            }
+          });
+        } catch (e) {
+          try {
+            if (typeof Window !== 'undefined' && Window.prototype) {
+              var protoFetch = Window.prototype.fetch;
+              var _pf = typeof protoFetch === 'function' ? protoFetch.bind(window) : protoFetch;
+              Object.defineProperty(Window.prototype, 'fetch', {
+                configurable: true,
+                enumerable: true,
+                get: function() {
+                  return _f || _pf;
+                },
+                set: function(val) {
+                  _f = val;
+                }
+              });
+            }
+          } catch (_) {}
+        }
+      })();
+    </script>
+  </head>
+  <body class="bg-[#FAF7F2] text-[#221B16] antialiased selection:bg-[#9B2C2C] selection:text-white">
+    <div id="root"></div>
+    <script type="module" src="/src/main.tsx"></script>
+  </body>
+</html>
+

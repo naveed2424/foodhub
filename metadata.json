@@ -1,0 +1,6 @@
+{
+  "name": "Yuletide Table – Global Christmas Food & Culinary Journal",
+  "description": "Explore authentic traditional Christmas recipes across Europe, Australia, South & North America with an interactive map, dietary filters, and daily SEO-optimized festive food news.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
