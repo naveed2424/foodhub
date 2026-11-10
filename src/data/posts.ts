@@ -61,7 +61,7 @@ export const INITIAL_POSTS: BlogPost[] = [
       avatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=200&q=80',
     },
     featuredImage: {
-      url: '/src/assets/images/hero_christmas_feast_1794320880047.jpg',
+      url: '/images/hero_christmas_feast_1794320880047.jpg',
       alt: 'Artisanal Christmas confectionery and chocolates on a festive holiday table with candles',
       caption: 'Luxury Christmas chocolate truffles and praline assortments face unprecedented ingredient shifts this winter season.',
     },
@@ -79,7 +79,7 @@ export const INITIAL_POSTS: BlogPost[] = [
           },
         ],
         image: {
-          url: '/src/assets/images/recipe_panettone_milanese_1794320880862.jpg',
+          url: '/images/recipe_panettone_milanese_1794320880862.jpg',
           alt: 'Artisanal Italian Christmas cake infused with chocolate nibs and citrus peel',
           caption: 'Bakers are pairing dark chocolate with dried citrus peels and stone fruits to create decadent flavor profiles while balancing cocoa volume.',
           placement: 'Between market analysis and artisan interviews',
@@ -148,7 +148,7 @@ export const INITIAL_POSTS: BlogPost[] = [
       avatar: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=200&q=80',
     },
     featuredImage: {
-      url: '/src/assets/images/recipe_australian_pavlova_1794320880411.jpg',
+      url: '/images/recipe_australian_pavlova_1794320880411.jpg',
       alt: 'Crisp Australian summer pavlova crowned with whipped cream and tropical passionfruit by the beach',
       caption: 'A fresh, crisp Pavlova crowned with passionfruit, raspberries, and mint captures the vibrant spirit of a 30°C Christmas afternoon.',
     },
@@ -219,7 +219,7 @@ export const INITIAL_POSTS: BlogPost[] = [
       avatar: 'https://images.unsplash.com/photo-1544005313-94ddf0286df2?auto=format&fit=crop&w=200&q=80',
     },
     featuredImage: {
-      url: '/src/assets/images/recipe_tourtiere_quebec_1794320881648.jpg',
+      url: '/images/recipe_tourtiere_quebec_1794320881648.jpg',
       alt: 'Freshly baked traditional Quebec Tourtiere pie sliced with spiced cranberry relish by candlelight',
       caption: 'Golden, flaky, and intoxicatingly fragrant with cloves and allspice, Tourtière is the crown jewel of French-Canadian Réveillon.',
     },
@@ -277,7 +277,7 @@ export const INITIAL_POSTS: BlogPost[] = [
       avatar: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?auto=format&fit=crop&w=200&q=80',
     },
     featuredImage: {
-      url: '/src/assets/images/hero_christmas_feast_1794320880047.jpg',
+      url: '/images/hero_christmas_feast_1794320880047.jpg',
       alt: 'Abundant zero-waste holiday table featuring roasted root vegetables, artisan breads, and sustainable seasonal produce',
       caption: 'Thoughtful menu design and root-to-stem culinary techniques allow hosts to deliver luxury feasts while reducing holiday food waste by up to 70%.',
     },

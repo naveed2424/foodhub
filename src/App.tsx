@@ -399,7 +399,7 @@ export default function App() {
             <div className="lg:col-span-5">
               <div className="relative rounded-2xl overflow-hidden shadow-xl aspect-[4/3] border border-[#E0D5C1] group">
                 <img
-                  src="/src/assets/images/hero_christmas_feast_1794320880047.jpg"
+                  src="/images/hero_christmas_feast_1794320880047.jpg"
                   alt="Grand atmospheric Christmas Eve dinner table with golden roasted roast, desserts, and candlelit ambiance"
                   className="w-full h-full object-cover group-hover:scale-102 transition-transform duration-500"
                 />
@@ -519,7 +519,7 @@ export default function App() {
                         className="w-full h-full object-cover group-hover:scale-103 transition-transform duration-300"
                         onError={(e) => {
                           (e.currentTarget as HTMLImageElement).src =
-                            '/src/assets/images/hero_christmas_feast_1794320880047.jpg';
+                            '/images/hero_christmas_feast_1794320880047.jpg';
                         }}
                       />
                       <div className="absolute top-3 left-3 bg-[#241D17]/85 backdrop-blur-xs text-white text-[11px] font-semibold px-2 py-0.5 rounded-md">
@@ -645,7 +645,7 @@ export default function App() {
                       className="w-full h-full object-cover group-hover:scale-102 transition-transform duration-300"
                       onError={(e) => {
                         (e.currentTarget as HTMLImageElement).src =
-                          '/src/assets/images/hero_christmas_feast_1794320880047.jpg';
+                          '/images/hero_christmas_feast_1794320880047.jpg';
                       }}
                     />
                     <div className="absolute top-3 left-3 bg-[#241D17]/85 backdrop-blur-xs text-white text-[11px] font-semibold px-2 py-0.5 rounded-md">

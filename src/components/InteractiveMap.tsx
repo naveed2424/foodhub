@@ -203,7 +203,7 @@ export const InteractiveMap: React.FC<InteractiveMapProps> = ({
                 className="w-20 h-20 rounded-lg object-cover shrink-0 border border-[#EAE3D2]"
                 onError={(e) => {
                   (e.currentTarget as HTMLImageElement).src =
-                    '/src/assets/images/hero_christmas_feast_1794320880047.jpg';
+                    '/images/hero_christmas_feast_1794320880047.jpg';
                 }}
               />
               <div className="flex-1 min-w-0">

@@ -220,7 +220,7 @@ export const RecipeModal: React.FC<RecipeModalProps> = ({ recipe, onClose }) => 
                   className="w-full h-full object-cover"
                   onError={(e) => {
                     (e.currentTarget as HTMLImageElement).src =
-                      '/src/assets/images/hero_christmas_feast_1794320880047.jpg';
+                      '/images/hero_christmas_feast_1794320880047.jpg';
                   }}
                 />
               </div>

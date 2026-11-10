@@ -349,7 +349,7 @@ Return STRICT JSON complying with this exact structure:
         avatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=200&q=80',
       },
       featuredImage: {
-        url: '/src/assets/images/hero_christmas_feast_1794320880047.jpg',
+        url: '/images/hero_christmas_feast_1794320880047.jpg',
         alt: parsedData.sections?.[0]?.image?.alt || 'Festive Christmas feast and holiday culinary traditions',
         caption: parsedData.sections?.[0]?.image?.caption || 'Festive gastronomy and cultural heritage around the globe.',
       },

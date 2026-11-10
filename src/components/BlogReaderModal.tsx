@@ -121,7 +121,7 @@ export const BlogReaderModal: React.FC<BlogReaderModalProps> = ({
       name: 'Yuletide Table Global Journal',
       logo: {
         '@type': 'ImageObject',
-        url: window.location.origin + '/src/assets/images/hero_christmas_feast_1794320880047.jpg',
+        url: window.location.origin + '/images/hero_christmas_feast_1794320880047.jpg',
       },
     },
   };
@@ -292,7 +292,7 @@ export const BlogReaderModal: React.FC<BlogReaderModalProps> = ({
                     className="w-full h-full object-cover"
                     onError={(e) => {
                       (e.currentTarget as HTMLImageElement).src =
-                        '/src/assets/images/hero_christmas_feast_1794320880047.jpg';
+                        '/images/hero_christmas_feast_1794320880047.jpg';
                     }}
                   />
                 </div>

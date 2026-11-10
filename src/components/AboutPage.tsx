@@ -20,8 +20,8 @@ interface AboutPageProps {
 }
 
 export const AboutPage: React.FC<AboutPageProps> = ({ onBackToHome }) => {
-  const KITCHEN_PHOTO = '/src/assets/images/naveed_in_home_kitchen_1794323626380.jpg';
-  const ORIGINAL_PHOTO = '/assets/aistudio/naveed_birthday2007_080_b4ca29b7.jpg';
+  const KITCHEN_PHOTO = '/images/naveed_in_home_kitchen_1794323626380.jpg';
+  const ORIGINAL_PHOTO = '/images/naveed_birthday2007_080_b4ca29b7.jpg';
 
   const [founderPhoto, setFounderPhoto] = useState<string>(KITCHEN_PHOTO);
   const [contactName, setContactName] = useState('');
