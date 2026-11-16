@@ -92,10 +92,10 @@ export const AboutPolicyModal: React.FC<AboutPolicyModalProps> = ({
           {tab === 'about' && (
             <div className="space-y-4">
               <h2 className="text-2xl font-serif font-bold text-[#241D17]">
-                About Yuletide Table: The Global Christmas Gastronomy Hub
+                About Naveed’s Table: The Global Culinary Heritage Hub
               </h2>
               <p>
-                Yuletide Table is a dedicated cultural archive and culinary journalism magazine celebrating the vast diversity of holiday food traditions around the world. While classic media often narrows Christmas food to a single regional menu, our mission is to illuminate how families across Europe, Australia & Oceania, South America, and North America gather around unique, deeply personal holiday feasts.
+                Naveed’s Table is a dedicated cultural archive and culinary journalism magazine celebrating the vast diversity of holiday food traditions around the world. While classic media often narrows festive food to a single regional menu, our mission is to illuminate how families across Europe, Australia & Oceania, South America, North America, and Asia & Africa gather around unique, deeply personal holiday feasts.
               </p>
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 pt-2">
                 <div className="p-3.5 bg-[#FAF7F2] rounded-xl border border-[#EDE5D8]">
@@ -126,7 +126,7 @@ export const AboutPolicyModal: React.FC<AboutPolicyModalProps> = ({
                 Editorial Integrity & Google AdSense Standards
               </h2>
               <p>
-                Yuletide Table adheres to strict journalistic codes of conduct, ensuring all published news, market analyses, and cultural dispatches are fact-based and rigorously referenced.
+                Naveed’s Table adheres to strict journalistic codes of conduct, ensuring all published news, market analyses, and cultural dispatches are fact-based and rigorously referenced.
               </p>
 
               <div className="space-y-3 pt-2">
@@ -171,7 +171,7 @@ export const AboutPolicyModal: React.FC<AboutPolicyModalProps> = ({
 
               <div className="space-y-2 text-xs">
                 <p>
-                  <strong>1. Data Collection:</strong> Yuletide Table values your privacy. We do not sell or trade your personal information. Any data submitted via our contact forms is used solely to respond to your editorial inquiries.
+                  <strong>1. Data Collection:</strong> Naveed’s Table values your privacy. We do not sell or trade your personal information. Any data submitted via our contact forms is used solely to respond to your editorial inquiries.
                 </p>
                 <p>
                   <strong>2. Cookies & Advertising:</strong> Third-party vendors, including Google, use cookies to serve ads based on prior visits to our website. Google's use of advertising cookies enables it and its partners to serve ads based on your visit to our site and/or other sites on the Internet.
@@ -186,7 +186,7 @@ export const AboutPolicyModal: React.FC<AboutPolicyModalProps> = ({
           {tab === 'contact' && (
             <div className="space-y-4">
               <h2 className="text-2xl font-serif font-bold text-[#241D17]">
-                Contact the Yuletide Editorial Desk
+                Contact the Naveed’s Table Editorial Desk
               </h2>
               <p className="text-xs text-[#665A4F]">
                 Founded by Naveed · Based in France 🇫🇷 · Direct Email: <a href="mailto:afzal460@gmail.com" className="text-[#9B2C2C] underline font-semibold">afzal460@gmail.com</a>
@@ -261,7 +261,7 @@ export const AboutPolicyModal: React.FC<AboutPolicyModalProps> = ({
         {/* Footer */}
         <div className="px-6 py-3.5 border-t border-[#F0EAE1] bg-[#FAF7F2] flex items-center justify-between shrink-0">
           <div className="text-xs text-[#7A6C5F]">
-            Yuletide Table · Global Yuletide Culture & Gastronomy
+            Naveed’s Table · Global Culinary Culture & Gastronomy
           </div>
           <button
             onClick={onClose}

@@ -20,9 +20,14 @@ import {
 interface RecipeModalProps {
   recipe: Recipe | null;
   onClose: () => void;
+  isOwnerAuthorized?: boolean;
 }
 
-export const RecipeModal: React.FC<RecipeModalProps> = ({ recipe, onClose }) => {
+export const RecipeModal: React.FC<RecipeModalProps> = ({
+  recipe,
+  onClose,
+  isOwnerAuthorized = false,
+}) => {
   if (!recipe) return null;
 
   const [servingMultiplier, setServingMultiplier] = useState<number>(1);
@@ -90,7 +95,7 @@ export const RecipeModal: React.FC<RecipeModalProps> = ({ recipe, onClose }) => 
     image: [recipe.image],
     author: {
       '@type': 'Organization',
-      name: 'Yuletide Table Global Culinary Archive',
+      name: "Naveed's Table Global Culinary Archive",
     },
     datePublished: '2026-11-10',
     description: recipe.description,
@@ -118,16 +123,35 @@ export const RecipeModal: React.FC<RecipeModalProps> = ({ recipe, onClose }) => 
   };
 
   return (
-    <div className="fixed inset-0 z-50 overflow-y-auto bg-black/60 backdrop-blur-xs flex items-center justify-center p-3 sm:p-6 animate-in fade-in duration-200">
+    <div className="fixed inset-0 z-50 overflow-y-auto bg-black/60 backdrop-blur-xs flex items-center justify-center p-3 sm:p-6 animate-in fade-in duration-200 print:static print:inset-auto print:block print:bg-white print:p-0 print:overflow-visible">
       {/* Schema.org Injection */}
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(schemaData) }}
       />
 
-      <div className="relative w-full max-w-4xl bg-white rounded-2xl shadow-2xl overflow-hidden border border-[#E8DEC8] my-8 max-h-[92vh] flex flex-col">
+      <div className="relative w-full max-w-4xl bg-white rounded-2xl shadow-2xl overflow-hidden border border-[#E8DEC8] my-8 max-h-[92vh] flex flex-col print:static print:max-w-none print:w-full print:max-h-none print:my-0 print:rounded-none print:border-0 print:shadow-none print:block print:overflow-visible">
+        {/* Print-Only Publication Masthead */}
+        <div className="hidden print:flex items-center justify-between pb-3 mb-4 border-b border-[#D8CBB8]">
+          <div>
+            <div className="text-lg font-serif font-bold text-[#241D17]">
+              Naveed’s Table
+            </div>
+            <div className="text-xs text-[#665A4F]">
+              {recipe.country} · {recipe.region} · {recipe.localName}
+            </div>
+          </div>
+          <div className="text-right text-xs text-[#7A6C5F]">
+            <div>Kitchen Recipe Sheet</div>
+            <div className="tabular-nums">
+              {Math.round(recipe.servings * servingMultiplier)} Servings ·{' '}
+              {recipe.prepTimeMinutes + recipe.cookTimeMinutes} mins total
+            </div>
+          </div>
+        </div>
+
         {/* Header Bar */}
-        <div className="flex items-center justify-between px-6 py-4 border-b border-[#F0EAE1] bg-[#FAF7F2] shrink-0">
+        <div className="flex items-center justify-between px-6 py-4 border-b border-[#F0EAE1] bg-[#FAF7F2] shrink-0 print:hidden">
           <div className="flex items-center gap-2 text-xs text-[#7A6C5F]">
             <Globe className="w-3.5 h-3.5 text-[#9B2C2C]" />
             <span className="font-semibold text-[#9B2C2C]">{recipe.country}</span>
@@ -140,23 +164,24 @@ export const RecipeModal: React.FC<RecipeModalProps> = ({ recipe, onClose }) => 
           <div className="flex items-center gap-2">
             <button
               onClick={handleShare}
-              className="p-2 text-[#7A6C5F] hover:text-[#241D17] hover:bg-[#F0EAE1] rounded-lg transition-colors text-xs flex items-center gap-1.5"
+              className="p-2 text-[#7A6C5F] hover:text-[#241D17] hover:bg-[#F0EAE1] rounded-lg transition-colors text-xs flex items-center gap-1.5 whitespace-nowrap shrink-0 cursor-pointer"
               title="Share Recipe Link"
             >
               <Share2 className="w-4 h-4" />
               <span className="hidden sm:inline">{copiedLink ? 'Link Copied!' : 'Share'}</span>
             </button>
             <button
+              type="button"
               onClick={handlePrint}
-              className="p-2 text-[#7A6C5F] hover:text-[#241D17] hover:bg-[#F0EAE1] rounded-lg transition-colors text-xs flex items-center gap-1.5"
-              title="Print Recipe"
+              className="px-3 py-1.5 text-[#241D17] hover:text-[#9B2C2C] bg-white hover:bg-[#F0EAE1] border border-[#DDD2C0] rounded-lg transition-colors text-xs font-semibold flex items-center gap-1.5 whitespace-nowrap shrink-0 cursor-pointer"
+              title="Open printer-friendly recipe layout"
             >
-              <Printer className="w-4 h-4" />
-              <span className="hidden sm:inline">Print</span>
+              <Printer className="w-4 h-4 text-[#9B2C2C]" />
+              <span>Printer-Friendly</span>
             </button>
             <button
               onClick={onClose}
-              className="p-2 text-[#7A6C5F] hover:text-[#9B2C2C] hover:bg-[#FCE8E8] rounded-lg transition-colors ml-2"
+              className="p-2 text-[#7A6C5F] hover:text-[#9B2C2C] hover:bg-[#FCE8E8] rounded-lg transition-colors ml-1 cursor-pointer"
               title="Close modal"
             >
               <X className="w-5 h-5" />
@@ -165,10 +190,10 @@ export const RecipeModal: React.FC<RecipeModalProps> = ({ recipe, onClose }) => 
         </div>
 
         {/* Scrollable Body */}
-        <div className="overflow-y-auto p-6 md:p-8 space-y-8">
+        <div className="overflow-y-auto p-6 md:p-8 space-y-8 print:overflow-visible print:p-0 print:space-y-6">
           {/* Hero Split */}
-          <div className="grid grid-cols-1 md:grid-cols-12 gap-6 items-center">
-            <div className="md:col-span-7 space-y-3">
+          <div className="grid grid-cols-1 md:grid-cols-12 print:grid-cols-12 gap-6 items-center print-avoid-break">
+            <div className="md:col-span-7 print:col-span-7 space-y-3">
               <div className="flex flex-wrap items-center gap-2 text-xs text-[#82532B]">
                 {recipe.dietary.map((d) => (
                   <span key={d} className="font-medium">
@@ -212,25 +237,42 @@ export const RecipeModal: React.FC<RecipeModalProps> = ({ recipe, onClose }) => 
               </div>
             </div>
 
-            <div className="md:col-span-5">
-              <div className="relative rounded-xl overflow-hidden aspect-[4/3] shadow-md border border-[#E8DEC8]">
+            <div className="md:col-span-5 print:col-span-5">
+              <div
+                onContextMenu={(e) => {
+                  if (!isOwnerAuthorized) e.preventDefault();
+                }}
+                onDragStart={(e) => {
+                  if (!isOwnerAuthorized) e.preventDefault();
+                }}
+                className="relative rounded-xl overflow-hidden aspect-[4/3] shadow-md print:shadow-none border border-[#E8DEC8] protected-media"
+              >
                 <img
                   src={recipe.image}
                   alt={recipe.imageAlt}
-                  className="w-full h-full object-cover"
+                  draggable={isOwnerAuthorized}
+                  className="w-full h-full object-cover protected-media"
                   onError={(e) => {
                     (e.currentTarget as HTMLImageElement).src =
                       '/images/hero_christmas_feast_1794320880047.jpg';
                   }}
                 />
+                {!isOwnerAuthorized && (
+                  <div
+                    aria-hidden="true"
+                    className="absolute inset-0 z-10 select-none print:hidden"
+                    onContextMenu={(e) => e.preventDefault()}
+                    onDragStart={(e) => e.preventDefault()}
+                  />
+                )}
               </div>
             </div>
           </div>
 
           {/* Cultural Folklore / Christmas Lore Box */}
-          <div className="p-5 bg-[#F9F5EE] border border-[#EADBCC] rounded-xl relative">
+          <div className="p-5 bg-[#F9F5EE] border border-[#EADBCC] rounded-xl relative print-avoid-break">
             <div className="flex items-start gap-3">
-              <Sparkles className="w-5 h-5 text-[#9B2C2C] shrink-0 mt-0.5" />
+              <Sparkles className="w-5 h-5 text-[#9B2C2C] shrink-0 mt-0.5 print:hidden" />
               <div>
                 <h3 className="text-sm font-bold uppercase tracking-wider text-[#9B2C2C] mb-1">
                   Festive Heritage & Origins
@@ -244,7 +286,7 @@ export const RecipeModal: React.FC<RecipeModalProps> = ({ recipe, onClose }) => 
 
           {/* Active Kitchen Timer Widget (if running) */}
           {activeTimerSeconds !== null && (
-            <div className="p-4 bg-[#241D17] text-white rounded-xl flex items-center justify-between shadow-lg">
+            <div className="p-4 bg-[#241D17] text-white rounded-xl flex items-center justify-between shadow-lg print:hidden">
               <div className="flex items-center gap-3">
                 <Clock className="w-5 h-5 text-[#EAB308] animate-pulse" />
                 <div>
@@ -287,7 +329,7 @@ export const RecipeModal: React.FC<RecipeModalProps> = ({ recipe, onClose }) => 
                   Ingredients
                 </h3>
                 {/* Servings Adjuster */}
-                <div className="flex items-center gap-1.5 bg-[#FAF7F2] border border-[#E4D9C5] p-1 rounded-lg">
+                <div className="flex items-center gap-1.5 bg-[#FAF7F2] border border-[#E4D9C5] p-1 rounded-lg print:hidden">
                   <span className="text-[11px] text-[#7A6C5F] px-1 font-medium">Scale:</span>
                   {[0.5, 1, 1.5, 2].map((factor) => (
                     <button
@@ -329,7 +371,7 @@ export const RecipeModal: React.FC<RecipeModalProps> = ({ recipe, onClose }) => 
               </ul>
 
               {/* Nutrition Estimation Strip */}
-              <div className="p-4 bg-[#FAF7F2] rounded-xl border border-[#EDE5D8] text-xs space-y-2">
+              <div className="p-4 bg-[#FAF7F2] rounded-xl border border-[#EDE5D8] text-xs space-y-2 print-avoid-break">
                 <div className="flex items-center justify-between text-[#8C7D6D]">
                   <span className="font-medium uppercase tracking-wider text-[10px]">
                     Estimated Per Serving
@@ -367,7 +409,7 @@ export const RecipeModal: React.FC<RecipeModalProps> = ({ recipe, onClose }) => 
                 <h3 className="text-xl font-serif font-bold text-[#241D17]">
                   Cooking Directions
                 </h3>
-                <span className="text-xs text-[#7A6C5F]">
+                <span className="text-xs text-[#7A6C5F] print:hidden">
                   {completedSteps.length} of {recipe.instructions.length} steps completed
                 </span>
               </div>
@@ -378,16 +420,16 @@ export const RecipeModal: React.FC<RecipeModalProps> = ({ recipe, onClose }) => 
                   return (
                     <div
                       key={ins.step}
-                      className={`p-4 rounded-xl border transition-all ${
+                      className={`p-4 rounded-xl border transition-all print-avoid-break ${
                         isDone
-                          ? 'bg-[#F4EFEB] border-[#DDD3C5] opacity-75'
+                          ? 'bg-[#F4EFEB] border-[#DDD3C5] opacity-75 print:opacity-100 print:bg-white'
                           : 'bg-white border-[#E4D9C5] hover:border-[#CFBEA5]'
                       }`}
                     >
                       <div className="flex items-start gap-3">
                         <button
                           onClick={() => toggleStep(ins.step)}
-                          className={`mt-0.5 w-6 h-6 rounded-full flex items-center justify-center shrink-0 transition-colors ${
+                          className={`mt-0.5 w-6 h-6 rounded-full flex items-center justify-center shrink-0 transition-colors print:hidden ${
                             isDone
                               ? 'bg-[#2E7D32] text-white'
                               : 'border-2 border-[#BDB09E] text-transparent hover:border-[#9B2C2C]'
@@ -395,12 +437,16 @@ export const RecipeModal: React.FC<RecipeModalProps> = ({ recipe, onClose }) => 
                         >
                           <CheckCircle2 className="w-4 h-4" />
                         </button>
+                        <span
+                          aria-hidden="true"
+                          className="hidden print:inline-block mt-1 w-4 h-4 border border-[#8C7D6D] rounded-xs shrink-0"
+                        />
 
                         <div className="flex-1">
                           <div className="flex items-center justify-between gap-2">
                             <h4
                               className={`text-sm font-bold ${
-                                isDone ? 'line-through text-[#7A6C5F]' : 'text-[#241D17]'
+                                isDone ? 'line-through text-[#7A6C5F] print:no-underline print:text-[#241D17]' : 'text-[#241D17]'
                               }`}
                             >
                               {ins.step}. {ins.title}
@@ -409,7 +455,7 @@ export const RecipeModal: React.FC<RecipeModalProps> = ({ recipe, onClose }) => 
                             {ins.timerMinutes && (
                               <button
                                 onClick={() => startTimer(ins.timerMinutes!, ins.step)}
-                                className="flex items-center gap-1 px-2 py-0.5 text-[11px] font-semibold text-[#82532B] bg-[#F7F1E7] hover:bg-[#EADBCC] rounded transition-colors whitespace-nowrap shrink-0"
+                                className="flex items-center gap-1 px-2 py-0.5 text-[11px] font-semibold text-[#82532B] bg-[#F7F1E7] hover:bg-[#EADBCC] rounded transition-colors whitespace-nowrap shrink-0 print:hidden"
                               >
                                 <Play className="w-3 h-3 fill-current" />
                                 <span>{ins.timerMinutes}m Timer</span>
@@ -419,7 +465,7 @@ export const RecipeModal: React.FC<RecipeModalProps> = ({ recipe, onClose }) => 
 
                           <p
                             className={`text-sm mt-1.5 leading-relaxed ${
-                              isDone ? 'text-[#8C7E72]' : 'text-[#4A3F34]'
+                              isDone ? 'text-[#8C7E72] print:text-[#332A22]' : 'text-[#4A3F34]'
                             }`}
                           >
                             {ins.text}
@@ -432,7 +478,7 @@ export const RecipeModal: React.FC<RecipeModalProps> = ({ recipe, onClose }) => 
               </div>
 
               {/* Chef tips */}
-              <div className="mt-6 p-4 bg-[#FAF7F2] rounded-xl border border-[#EDE5D8]">
+              <div className="mt-6 p-4 bg-[#FAF7F2] rounded-xl border border-[#EDE5D8] print-avoid-break">
                 <div className="flex items-center gap-2 text-xs font-bold text-[#82532B] uppercase tracking-wider mb-2">
                   <ChefHat className="w-4 h-4 text-[#9B2C2C]" />
                   <span>Chef's Secrets to Authenticity</span>
@@ -451,9 +497,9 @@ export const RecipeModal: React.FC<RecipeModalProps> = ({ recipe, onClose }) => 
         </div>
 
         {/* Footer */}
-        <div className="px-6 py-4 border-t border-[#F0EAE1] bg-[#FAF7F2] flex items-center justify-between shrink-0">
+        <div className="px-6 py-4 border-t border-[#F0EAE1] bg-[#FAF7F2] flex items-center justify-between shrink-0 print:hidden">
           <div className="text-xs text-[#7A6C5F]">
-            Christmas Recipe Collection · Yuletide Table
+            Global Festive Recipe Collection · Naveed’s Table
           </div>
           <button
             onClick={onClose}

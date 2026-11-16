@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { TRANSLATIONS } from '../data/translations';
 import {
   Mail,
   Send,
@@ -7,39 +8,67 @@ import {
   Globe,
   Sparkles,
   CheckCircle2,
-  Heart,
-  Upload,
   Camera,
   ShieldCheck,
   Utensils,
   ArrowLeft,
+  Lock,
+  Download,
 } from 'lucide-react';
 
 interface AboutPageProps {
   onBackToHome: () => void;
+  isOwnerAuthorized: boolean;
+  onRequestOwnerUnlock: () => void;
+  currentLang: string;
 }
 
-export const AboutPage: React.FC<AboutPageProps> = ({ onBackToHome }) => {
+export const AboutPage: React.FC<AboutPageProps> = ({
+  onBackToHome,
+  isOwnerAuthorized,
+  onRequestOwnerUnlock,
+  currentLang,
+}) => {
   const KITCHEN_PHOTO = '/images/naveed_in_home_kitchen_1794323626380.jpg';
   const ORIGINAL_PHOTO = '/images/naveed_birthday2007_080_b4ca29b7.jpg';
 
-  const [founderPhoto, setFounderPhoto] = useState<string>(KITCHEN_PHOTO);
+  const t = TRANSLATIONS[currentLang] || TRANSLATIONS['en'];
+
+  const [founderPhoto, setFounderPhoto] = useState<string>(() => {
+    if (typeof window !== 'undefined') {
+      return localStorage.getItem('yt_owner_portrait_override') || KITCHEN_PHOTO;
+    }
+    return KITCHEN_PHOTO;
+  });
   const [contactName, setContactName] = useState('');
   const [contactEmail, setContactEmail] = useState('');
   const [contactMessage, setContactMessage] = useState('');
   const [isSent, setIsSent] = useState(false);
 
   const handlePhotoUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (!isOwnerAuthorized) return;
     const file = e.target.files?.[0];
     if (file) {
       const reader = new FileReader();
       reader.onload = (event) => {
         if (event.target?.result) {
-          setFounderPhoto(event.target.result as string);
+          const dataUrl = event.target.result as string;
+          setFounderPhoto(dataUrl);
+          try {
+            localStorage.setItem('yt_owner_portrait_override', dataUrl);
+          } catch (_) {}
         }
       };
       reader.readAsDataURL(file);
     }
+  };
+
+  const handleOwnerSelectPhoto = (url: string) => {
+    if (!isOwnerAuthorized) return;
+    setFounderPhoto(url);
+    try {
+      localStorage.setItem('yt_owner_portrait_override', url);
+    } catch (_) {}
   };
 
   const handleContactSubmit = (e: React.FormEvent) => {
@@ -62,27 +91,55 @@ export const AboutPage: React.FC<AboutPageProps> = ({ onBackToHome }) => {
           className="inline-flex items-center gap-2 text-xs font-semibold text-[#82532B] hover:text-[#9B2C2C] transition-colors group cursor-pointer"
         >
           <ArrowLeft className="w-4 h-4 transform group-hover:-translate-x-1 transition-transform" />
-          <span>Back to Yuletide Recipe Hub & Journal</span>
+          <span>{t.ctaViewRecipes}</span>
         </button>
       </div>
 
-      {/* Hero: Founder Introduction & Photo */}
+      {/* Hero: Founder Introduction & Protected Photo */}
       <section className="bg-white border border-[#E8DEC8] rounded-3xl p-6 sm:p-10 shadow-sm overflow-hidden">
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-12 items-center">
-          {/* Photo Column */}
+          {/* Protected Photo Column */}
           <div className="lg:col-span-5 flex flex-col items-center">
-            <div className="relative w-full max-w-sm aspect-square rounded-2xl overflow-hidden shadow-xl border-4 border-[#F5EFEB] group bg-[#FAF7F2]">
+            <div
+              onContextMenu={(e) => {
+                if (!isOwnerAuthorized) e.preventDefault();
+              }}
+              onDragStart={(e) => {
+                if (!isOwnerAuthorized) e.preventDefault();
+              }}
+              className={`relative w-full max-w-sm aspect-square rounded-2xl overflow-hidden shadow-xl border-4 border-[#F5EFEB] bg-[#FAF7F2] ${
+                !isOwnerAuthorized ? 'protected-media no-print-unauthorized' : ''
+              }`}
+            >
               <img
                 src={founderPhoto}
-                alt="Naveed in his home kitchen, Founder & Editor-in-Chief of Yuletide Table"
-                className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-102"
+                alt="Naveed in his home kitchen, Founder & Editor-in-Chief of Naveed's Table"
+                draggable={isOwnerAuthorized}
+                className={`w-full h-full object-cover ${
+                  !isOwnerAuthorized ? 'pointer-events-none select-none' : ''
+                }`}
                 onError={(e) => {
                   (e.currentTarget as HTMLImageElement).src = ORIGINAL_PHOTO;
                 }}
               />
-              <div className="absolute inset-0 bg-gradient-to-t from-black/75 via-transparent to-transparent flex items-end p-4">
+
+              {/* Transparent Protective Shield against right-click / drag / mobile long-press */}
+              {!isOwnerAuthorized && (
+                <div
+                  aria-hidden="true"
+                  onContextMenu={(e) => e.preventDefault()}
+                  onDragStart={(e) => e.preventDefault()}
+                  className="absolute inset-0 z-10 select-none bg-transparent"
+                />
+              )}
+
+              <div className="absolute inset-0 z-20 pointer-events-none bg-gradient-to-t from-black/75 via-transparent to-transparent flex items-end justify-between p-4">
                 <span className="text-xs text-white font-medium tracking-wide">
-                  Naveed · Founder & Editor-in-Chief · Based in France 🇫🇷
+                  Naveed · Founder & Editor-in-Chief · France 🇫🇷
+                </span>
+                <span className="text-[10px] text-white/75 flex items-center gap-1">
+                  <Lock className="w-3 h-3" />
+                  <span>©</span>
                 </span>
               </div>
             </div>
@@ -99,46 +156,74 @@ export const AboutPage: React.FC<AboutPageProps> = ({ onBackToHome }) => {
               </a>
             </div>
 
-            {/* Photo options and switcher */}
-            <div className="mt-3 flex flex-wrap items-center justify-center gap-2">
-              <button
-                type="button"
-                onClick={() => setFounderPhoto(KITCHEN_PHOTO)}
-                className={`px-2.5 py-1 text-xs rounded-lg border transition-colors cursor-pointer ${
-                  founderPhoto === KITCHEN_PHOTO
-                    ? 'bg-[#241D17] text-white border-[#241D17]'
-                    : 'bg-[#FAF7F2] text-[#665A4F] border-[#DDD2C0] hover:text-[#241D17]'
-                }`}
-              >
-                Home Kitchen Photo
-              </button>
-              <button
-                type="button"
-                onClick={() => setFounderPhoto(ORIGINAL_PHOTO)}
-                className={`px-2.5 py-1 text-xs rounded-lg border transition-colors cursor-pointer ${
-                  founderPhoto === ORIGINAL_PHOTO
-                    ? 'bg-[#241D17] text-white border-[#241D17]'
-                    : 'bg-[#FAF7F2] text-[#665A4F] border-[#DDD2C0] hover:text-[#241D17]'
-                }`}
-              >
-                Original Photo
-              </button>
-              <label
-                htmlFor="photo-upload"
-                className="inline-flex items-center gap-1 px-2.5 py-1 text-xs font-medium text-[#7A6C5F] hover:text-[#241D17] bg-[#FAF7F2] hover:bg-[#EFE8DD] border border-[#DDD2C0] rounded-lg cursor-pointer transition-colors"
-                title="Upload another photo"
-              >
-                <Camera className="w-3 h-3 text-[#9B2C2C]" />
-                <span>Upload</span>
-              </label>
-              <input
-                id="photo-upload"
-                type="file"
-                accept="image/*"
-                onChange={handlePhotoUpload}
-                className="hidden"
-              />
-            </div>
+            {/* Owner-Only Photo Controls (Strictly locked from public visitors) */}
+            {isOwnerAuthorized ? (
+              <div className="mt-4 p-3 bg-[#F2F8F2] border border-[#CDE5CD] rounded-xl space-y-2 w-full max-w-sm">
+                <div className="text-[11px] font-semibold text-[#1E4620] flex items-center justify-center gap-1.5">
+                  <ShieldCheck className="w-3.5 h-3.5 text-[#2E7D32]" />
+                  <span>Owner Permission Verified</span>
+                </div>
+                <div className="flex flex-wrap items-center justify-center gap-1.5">
+                  <button
+                    type="button"
+                    onClick={() => handleOwnerSelectPhoto(KITCHEN_PHOTO)}
+                    className={`px-2.5 py-1 text-xs rounded-lg border transition-colors cursor-pointer ${
+                      founderPhoto === KITCHEN_PHOTO
+                        ? 'bg-[#241D17] text-white border-[#241D17]'
+                        : 'bg-white text-[#665A4F] border-[#DDD2C0] hover:text-[#241D17]'
+                    }`}
+                  >
+                    Home Kitchen
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => handleOwnerSelectPhoto(ORIGINAL_PHOTO)}
+                    className={`px-2.5 py-1 text-xs rounded-lg border transition-colors cursor-pointer ${
+                      founderPhoto === ORIGINAL_PHOTO
+                        ? 'bg-[#241D17] text-white border-[#241D17]'
+                        : 'bg-white text-[#665A4F] border-[#DDD2C0] hover:text-[#241D17]'
+                    }`}
+                  >
+                    Original
+                  </button>
+                  <label
+                    htmlFor="owner-photo-upload"
+                    className="inline-flex items-center gap-1 px-2.5 py-1 text-xs font-medium text-[#241D17] bg-white hover:bg-[#EFE8DD] border border-[#DDD2C0] rounded-lg cursor-pointer transition-colors"
+                  >
+                    <Camera className="w-3 h-3 text-[#9B2C2C]" />
+                    <span>Change</span>
+                  </label>
+                  <input
+                    id="owner-photo-upload"
+                    type="file"
+                    accept="image/*"
+                    onChange={handlePhotoUpload}
+                    className="hidden"
+                  />
+                  <a
+                    href={founderPhoto}
+                    download="naveed_portrait.jpg"
+                    className="inline-flex items-center gap-1 px-2.5 py-1 text-xs font-medium text-[#241D17] bg-white hover:bg-[#EFE8DD] border border-[#DDD2C0] rounded-lg transition-colors"
+                  >
+                    <Download className="w-3 h-3 text-[#9B2C2C]" />
+                    <span>Save</span>
+                  </a>
+                </div>
+              </div>
+            ) : (
+              <div className="mt-3 flex items-center justify-center gap-2 text-[11px] text-[#7A6C5F]">
+                <Lock className="w-3 h-3 text-[#9B2C2C]" />
+                <span>{t.ownerProtectedLabel}</span>
+                <button
+                  type="button"
+                  onClick={onRequestOwnerUnlock}
+                  className="underline hover:text-[#241D17] cursor-pointer"
+                  title="Owner Sign-In Required"
+                >
+                  Owner
+                </button>
+              </div>
+            )}
           </div>
 
           {/* Letter / Story Column */}
@@ -154,12 +239,12 @@ export const AboutPage: React.FC<AboutPageProps> = ({ onBackToHome }) => {
 
             <div className="space-y-4 text-base text-[#4E4237] leading-relaxed">
               <p>
-                Welcome to <strong>Yuletide Table</strong>. I created this publication from a simple, profound observation: while the world often portrays Christmas through snowy windows with a single golden roast bird, the true reality of Christmas gastronomy across our planet is an infinitely richer, vibrant tapestry.
+                Welcome to <strong>Naveed’s Table</strong>. I created this publication from a simple, profound observation: while the world often portrays Christmas through snowy windows with a single golden roast bird, the true reality of festive gastronomy across our planet is an infinitely richer, vibrant tapestry.
               </p>
               <p>
                 In Milan, families wait all year for the soaring, sourdough honeycomb of fresh Panettone. In Quebec, midnight church bells usher in the Réveillon with the clove-perfumed steam of grandmother’s Tourtière pie. Across Australia, families celebrate a radiant 30°C sunny Christmas with chilled wild king prawns, passionfruit Pavlova, and iced spritzes. And in Caracas, Christmas Eve is incomplete without the savory-sweet aroma of Pan de Jamón rolling out of the oven.
               </p>
-              <p className="italic border-l-2 border-[#9B2C2C] pl-4 text-[#332A22]">
+              <p className="italic py-3 border-y border-[#E8DEC8] text-[#332A22]">
                 "Food is the most honest bridge between cultures. When we understand what another family lovingly prepares on their most sacred holiday evening, distant continents suddenly feel like home."
               </p>
               <p>
@@ -202,7 +287,7 @@ export const AboutPage: React.FC<AboutPageProps> = ({ onBackToHome }) => {
             How We Document Christmas Gastronomy
           </h2>
           <p className="text-sm text-[#665A4F]">
-            Every recipe and story on Yuletide Table is grounded in 4 non-negotiable principles of culinary authenticity and journalistic rigor.
+            Every recipe and story on Naveed’s Table is grounded in 4 non-negotiable principles of culinary authenticity and journalistic rigor.
           </p>
         </div>
 
@@ -215,7 +300,7 @@ export const AboutPage: React.FC<AboutPageProps> = ({ onBackToHome }) => {
               1. Geographic Diversity
             </h3>
             <p className="text-xs text-[#574B40] leading-relaxed">
-              We divide recipes systematically across Europe, Australia & Oceania, South America, and North America, ensuring both cold-winter and warm-summer traditions are honored.
+              We organize recipes systematically across Europe, Australia & Oceania, South America, North America, and Asia & Africa, honoring both cold-winter and warm-summer traditions.
             </p>
           </div>
 
@@ -302,7 +387,7 @@ export const AboutPage: React.FC<AboutPageProps> = ({ onBackToHome }) => {
               Connect with Naveed & The Editorial Desk
             </h2>
             <p className="text-xs text-[#665A4F]">
-              Have a cherished Christmas recipe from your homeland or heritage you'd like to see documented on Yuletide Table? Write directly to our team.
+              Have a cherished holiday recipe from your homeland or heritage you'd like to see documented on Naveed’s Table? Write directly to our team.
             </p>
           </div>
 
@@ -310,7 +395,7 @@ export const AboutPage: React.FC<AboutPageProps> = ({ onBackToHome }) => {
             <div className="p-4 bg-[#F2F8F2] border border-[#CDE5CD] rounded-2xl flex items-center gap-3 text-xs text-[#1E4620]">
               <CheckCircle2 className="w-5 h-5 text-[#2E7D32] shrink-0" />
               <span>
-                Thank you! Your message and recipe suggestions have been sent to Naveed and the Yuletide Table research team.
+                Thank you! Your message and recipe suggestions have been sent to Naveed and the Naveed’s Table research team.
               </span>
             </div>
           ) : (

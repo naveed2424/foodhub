@@ -13,6 +13,7 @@ import { BlogReaderModal } from './components/BlogReaderModal';
 import { AiBlogGeneratorModal } from './components/AiBlogGeneratorModal';
 import { AboutPolicyModal } from './components/AboutPolicyModal';
 import { AboutPage } from './components/AboutPage';
+import { ReviewsPage } from './components/ReviewsPage';
 import {
   Compass,
   Utensils,
@@ -33,10 +34,23 @@ import {
   Sparkles,
   Lock,
   Mail,
+  MessageSquare,
+  KeyRound,
+  X,
 } from 'lucide-react';
 
+const OWNER_PASSCODE_SHA256 =
+  '73f623cb0538319622d679e79b63808fe5ccdb0e20edc009c3face01cb7ac9f6';
+
+async function sha256Hex(value: string): Promise<string> {
+  const buf = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(value));
+  return Array.from(new Uint8Array(buf))
+    .map((b) => b.toString(16).padStart(2, '0'))
+    .join('');
+}
+
 export default function App() {
-  const [currentPage, setCurrentPage] = useState<'home' | 'about'>('home');
+  const [currentPage, setCurrentPage] = useState<'home' | 'reviews' | 'about'>('home');
   const [selectedRegion, setSelectedRegion] = useState<string>('All');
   const [selectedDietary, setSelectedDietary] = useState<string>('All');
   const [searchQuery, setSearchQuery] = useState<string>('');
@@ -93,33 +107,109 @@ export default function App() {
     return () => document.removeEventListener('mousedown', handleOutsideClick);
   }, []);
 
-  // Hidden Editor Mode (strictly hidden from public visitors, accessible via secret shortcut or parameter)
-  const [isEditorMode, setIsEditorMode] = useState<boolean>(() => {
-    if (typeof window !== 'undefined') {
-      return (
-        window.location.search.includes('editor') ||
-        window.location.search.includes('admin') ||
-        localStorage.getItem('yt_editor_mode') === 'true'
-      );
-    }
-    return false;
-  });
+  // Verified Owner Authorization (strictly locked against unauthorized changes or downloads)
+  const [isOwnerAuthorized, setIsOwnerAuthorized] = useState<boolean>(false);
+  const [ownerPasscode, setOwnerPasscode] = useState<string>('');
+  const [isOwnerLoginOpen, setIsOwnerLoginOpen] = useState<boolean>(false);
+  const [passcodeInput, setPasscodeInput] = useState<string>('');
+  const [passcodeError, setPasscodeError] = useState<string>('');
+  const [isVerifyingOwner, setIsVerifyingOwner] = useState<boolean>(false);
 
-  // Keyboard shortcut Ctrl+Shift+E or Cmd+Shift+E to toggle editor mode privately
+  // Clear legacy unauthenticated editor flag if present
+  useEffect(() => {
+    try {
+      localStorage.removeItem('yt_editor_mode');
+    } catch (_) {}
+  }, []);
+
+  // Prevent right-click and image drag-download by public visitors across the site
+  useEffect(() => {
+    if (isOwnerAuthorized) return;
+
+    const handleContextMenu = (e: MouseEvent) => {
+      const target = e.target as HTMLElement | null;
+      if (target && (target.tagName === 'IMG' || target.closest('.protected-media'))) {
+        e.preventDefault();
+      }
+    };
+
+    const handleDragStart = (e: DragEvent) => {
+      const target = e.target as HTMLElement | null;
+      if (target && (target.tagName === 'IMG' || target.closest('.protected-media'))) {
+        e.preventDefault();
+      }
+    };
+
+    document.addEventListener('contextmenu', handleContextMenu);
+    document.addEventListener('dragstart', handleDragStart);
+    return () => {
+      document.removeEventListener('contextmenu', handleContextMenu);
+      document.removeEventListener('dragstart', handleDragStart);
+    };
+  }, [isOwnerAuthorized]);
+
+  // Keyboard shortcut Ctrl+Shift+E or Cmd+Shift+E opens Owner Verification modal (never bypasses passcode!)
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if ((e.ctrlKey || e.metaKey) && e.shiftKey && (e.key === 'E' || e.key === 'e')) {
         e.preventDefault();
-        setIsEditorMode((prev) => {
-          const next = !prev;
-          localStorage.setItem('yt_editor_mode', next ? 'true' : 'false');
-          return next;
-        });
+        if (isOwnerAuthorized) {
+          setIsOwnerAuthorized(false);
+          setOwnerPasscode('');
+        } else {
+          setPasscodeError('');
+          setIsOwnerLoginOpen(true);
+        }
       }
     };
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, []);
+  }, [isOwnerAuthorized]);
+
+  const handleVerifyOwner = async (e: React.FormEvent) => {
+    e.preventDefault();
+    const candidate = passcodeInput.trim();
+    if (!candidate) return;
+
+    setIsVerifyingOwner(true);
+    setPasscodeError('');
+
+    try {
+      const res = await fetch('/api/verify-owner', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ passcode: candidate }),
+      });
+
+      if (res.ok) {
+        const data = await res.json();
+        if (data.authorized) {
+          setIsOwnerAuthorized(true);
+          setOwnerPasscode(candidate);
+          setPasscodeInput('');
+          setIsOwnerLoginOpen(false);
+          return;
+        }
+      } else if (res.status === 403) {
+        setPasscodeError('Access denied: Invalid owner passcode.');
+        return;
+      }
+      throw new Error('Static fallback');
+    } catch (_) {
+      // Static Netlify deployment verification via SHA-256
+      const digest = await sha256Hex(candidate);
+      if (digest === OWNER_PASSCODE_SHA256) {
+        setIsOwnerAuthorized(true);
+        setOwnerPasscode(candidate);
+        setPasscodeInput('');
+        setIsOwnerLoginOpen(false);
+      } else {
+        setPasscodeError('Access denied: Invalid owner passcode.');
+      }
+    } finally {
+      setIsVerifyingOwner(false);
+    }
+  };
 
   // Fetch initial posts and schedule with graceful fallback
   useEffect(() => {
@@ -189,6 +279,7 @@ export default function App() {
     { label: 'Australia & Oceania', value: 'Australia & Oceania' },
     { label: 'South America', value: 'South America' },
     { label: 'North America', value: 'North America' },
+    { label: 'Asia & Africa', value: 'Asia & Africa' },
   ];
 
   const navigateToSection = (sectionId: string) => {
@@ -205,17 +296,17 @@ export default function App() {
   return (
     <div
       dir={isRtl ? 'rtl' : 'ltr'}
-      className="min-h-screen bg-[#FAF7F2] text-[#241D17] flex flex-col font-sans"
+      className="min-h-screen bg-[#FAF7F2] text-[#241D17] flex flex-col font-sans print:bg-white print:min-h-0"
     >
       {/* Top Navigation Bar: One-Row, Three-Zone Contract (§2) */}
-      <header className="sticky top-0 z-40 bg-[#FAF7F2]/90 backdrop-blur-md border-b border-[#E8DEC8]">
+      <header className="sticky top-0 z-40 bg-[#FAF7F2]/90 backdrop-blur-md border-b border-[#E8DEC8] print:hidden">
         <div className="max-w-7xl mx-auto flex items-center justify-between gap-4 sm:gap-8 px-4 sm:px-6 py-4">
           {/* Zone 1: Single text element wordmark */}
           <button
             onClick={() => setCurrentPage('home')}
             className="text-xl md:text-2xl font-serif font-bold text-[#241D17] tracking-tight whitespace-nowrap shrink-0 hover:text-[#9B2C2C] transition-colors cursor-pointer text-left"
           >
-            {t.siteTitle || 'Yuletide Table'}
+            {t.siteTitle || "Naveed's Table"}
           </button>
 
           {/* Zone 2: 4–5 clean single-line text navigation links */}
@@ -241,7 +332,23 @@ export default function App() {
               {t.navJournal}
             </button>
             <button
-              onClick={() => setCurrentPage('about')}
+              onClick={() => {
+                setCurrentPage('reviews');
+                window.scrollTo({ top: 0, behavior: 'smooth' });
+              }}
+              className={`hover:text-[#241D17] transition-colors whitespace-nowrap shrink-0 cursor-pointer ${
+                currentPage === 'reviews'
+                  ? 'text-[#9B2C2C] font-semibold border-b-2 border-[#9B2C2C] pb-0.5'
+                  : ''
+              }`}
+            >
+              {t.navReviews || 'Reviews'}
+            </button>
+            <button
+              onClick={() => {
+                setCurrentPage('about');
+                window.scrollTo({ top: 0, behavior: 'smooth' });
+              }}
               className={`hover:text-[#241D17] transition-colors whitespace-nowrap shrink-0 cursor-pointer ${
                 currentPage === 'about'
                   ? 'text-[#9B2C2C] font-semibold border-b-2 border-[#9B2C2C] pb-0.5'
@@ -314,7 +421,7 @@ export default function App() {
             </div>
 
             {/* Primary Action Button */}
-            {currentPage === 'about' ? (
+            {currentPage === 'about' || currentPage === 'reviews' ? (
               <button
                 onClick={() => setCurrentPage('home')}
                 className="px-3.5 sm:px-4 py-2 text-xs font-semibold text-white bg-[#9B2C2C] hover:bg-[#822424] rounded-lg transition-colors whitespace-nowrap shrink-0 shadow-xs cursor-pointer"
@@ -331,15 +438,74 @@ export default function App() {
             )}
           </div>
         </div>
+
+        {/* Mobile Secondary Quick Nav Strip */}
+        <div className="md:hidden flex items-center gap-4 overflow-x-auto px-4 py-2 border-t border-[#ECE2D0] text-xs font-medium text-[#665A4F] scrollbar-none">
+          <button
+            onClick={() => navigateToSection('recipes-section')}
+            className="whitespace-nowrap shrink-0 hover:text-[#9B2C2C]"
+          >
+            {t.navRecipes}
+          </button>
+          <button
+            onClick={() => navigateToSection('journal-section')}
+            className="whitespace-nowrap shrink-0 hover:text-[#9B2C2C]"
+          >
+            {t.navJournal}
+          </button>
+          <button
+            onClick={() => {
+              setCurrentPage('reviews');
+              window.scrollTo({ top: 0, behavior: 'smooth' });
+            }}
+            className={`whitespace-nowrap shrink-0 ${
+              currentPage === 'reviews' ? 'text-[#9B2C2C] font-bold' : ''
+            }`}
+          >
+            {t.navReviews || 'Reviews'}
+          </button>
+          <button
+            onClick={() => {
+              setCurrentPage('about');
+              window.scrollTo({ top: 0, behavior: 'smooth' });
+            }}
+            className={`whitespace-nowrap shrink-0 ${
+              currentPage === 'about' ? 'text-[#9B2C2C] font-bold' : ''
+            }`}
+          >
+            {t.navAbout}
+          </button>
+        </div>
       </header>
 
       {/* Main Page Content */}
       {currentPage === 'about' ? (
-        <main className="flex-1">
-          <AboutPage onBackToHome={() => setCurrentPage('home')} />
+        <main className={`flex-1 ${activeRecipe || activeBlogPost ? 'print:hidden' : ''}`}>
+          <AboutPage
+            onBackToHome={() => setCurrentPage('home')}
+            isOwnerAuthorized={isOwnerAuthorized}
+            onRequestOwnerUnlock={() => {
+              setPasscodeError('');
+              setIsOwnerLoginOpen(true);
+            }}
+            currentLang={currentLang}
+          />
+        </main>
+      ) : currentPage === 'reviews' ? (
+        <main className={`flex-1 ${activeRecipe || activeBlogPost ? 'print:hidden' : ''}`}>
+          <ReviewsPage
+            onBackToHome={() => setCurrentPage('home')}
+            currentLang={currentLang}
+            isOwnerAuthorized={isOwnerAuthorized}
+            ownerPasscode={ownerPasscode}
+          />
         </main>
       ) : (
-        <main className="flex-1 max-w-7xl mx-auto w-full px-4 sm:px-6 py-8 space-y-16">
+        <main
+          className={`flex-1 max-w-7xl mx-auto w-full px-4 sm:px-6 py-8 space-y-16 ${
+            activeRecipe || activeBlogPost ? 'print:hidden' : ''
+          }`}
+        >
           {/* Hero Section */}
           <section className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-center pt-2 pb-6 border-b border-[#E8DEC8]">
             <div className="lg:col-span-7 space-y-5">
@@ -385,7 +551,7 @@ export default function App() {
                 </div>
                 <span aria-hidden="true">·</span>
                 <div>
-                  <span className="font-bold text-[#241D17] text-sm tabular-nums mr-1">4 Continents</span>
+                  <span className="font-bold text-[#241D17] text-sm tabular-nums mr-1">5 Regions</span>
                   {t.continentsDivided}
                 </div>
                 <span aria-hidden="true">·</span>
@@ -397,13 +563,14 @@ export default function App() {
             </div>
 
             <div className="lg:col-span-5">
-              <div className="relative rounded-2xl overflow-hidden shadow-xl aspect-[4/3] border border-[#E0D5C1] group">
+              <div className="relative rounded-2xl overflow-hidden shadow-xl aspect-[4/3] border border-[#E0D5C1] group protected-media">
                 <img
                   src="/images/hero_christmas_feast_1794320880047.jpg"
                   alt="Grand atmospheric Christmas Eve dinner table with golden roasted roast, desserts, and candlelit ambiance"
-                  className="w-full h-full object-cover group-hover:scale-102 transition-transform duration-500"
+                  draggable={isOwnerAuthorized}
+                  className="w-full h-full object-cover group-hover:scale-102 transition-transform duration-500 protected-media"
                 />
-                <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/25 to-transparent flex flex-col justify-end p-6 text-white">
+                <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/25 to-transparent flex flex-col justify-end p-6 text-white select-none">
                   <span className="text-[11px] uppercase tracking-wider text-white/80 font-medium">
                     Featured Global Tradition
                   </span>
@@ -440,7 +607,7 @@ export default function App() {
                   Authentic Christmas Recipes by Region
                 </h2>
                 <p className="text-sm text-[#665A4F] mt-1">
-                  Filtered by region (Europe, Australia, South and North America) and dietary preference.
+                  Filtered by region (Europe, Oceania, Americas, Asia & Africa) and dietary preference.
                 </p>
               </div>
 
@@ -512,11 +679,12 @@ export default function App() {
                     onClick={() => setActiveRecipe(recipe)}
                     className="bg-white border border-[#E4D9C5] rounded-2xl overflow-hidden hover:shadow-md hover:border-[#CFBEA5] transition-all duration-200 cursor-pointer flex flex-col group"
                   >
-                    <div className="relative aspect-[4/3] overflow-hidden bg-[#F0E9DF]">
+                    <div className="relative aspect-[4/3] overflow-hidden bg-[#F0E9DF] protected-media">
                       <img
                         src={recipe.image}
                         alt={recipe.imageAlt}
-                        className="w-full h-full object-cover group-hover:scale-103 transition-transform duration-300"
+                        draggable={isOwnerAuthorized}
+                        className="w-full h-full object-cover group-hover:scale-103 transition-transform duration-300 protected-media"
                         onError={(e) => {
                           (e.currentTarget as HTMLImageElement).src =
                             '/images/hero_christmas_feast_1794320880047.jpg';
@@ -564,7 +732,7 @@ export default function App() {
           </section>
 
           {/* AdSense Compliant Mid-Page Banner */}
-          <div className="p-4 bg-[#FAF8F5] border border-dashed border-[#DDD2C0] rounded-xl text-center">
+          <div className="p-4 bg-[#FAF8F5] border border-dashed border-[#DDD2C0] rounded-xl text-center print:hidden">
             <span className="text-[10px] uppercase tracking-wider text-[#9C8F80] block font-medium">
               Advertisement · Google AdSense Approved Placement
             </span>
@@ -638,11 +806,12 @@ export default function App() {
                   onClick={() => setActiveBlogPost(post)}
                   className="bg-white border border-[#E4D9C5] rounded-2xl overflow-hidden hover:border-[#CFBEA5] hover:shadow-md transition-all duration-200 cursor-pointer flex flex-col group"
                 >
-                  <div className="relative aspect-[16/9] overflow-hidden bg-[#F0E9DF]">
+                  <div className="relative aspect-[16/9] overflow-hidden bg-[#F0E9DF] protected-media">
                     <img
                       src={post.featuredImage.url}
                       alt={post.featuredImage.alt}
-                      className="w-full h-full object-cover group-hover:scale-102 transition-transform duration-300"
+                      draggable={isOwnerAuthorized}
+                      className="w-full h-full object-cover group-hover:scale-102 transition-transform duration-300 protected-media"
                       onError={(e) => {
                         (e.currentTarget as HTMLImageElement).src =
                           '/images/hero_christmas_feast_1794320880047.jpg';
@@ -691,16 +860,43 @@ export default function App() {
               ))}
             </div>
           </section>
+
+          {/* Community Reviews & Comments Invitation Banner */}
+          <section className="p-8 bg-white border border-[#E4D9C5] rounded-2xl flex flex-col md:flex-row items-start md:items-center justify-between gap-6">
+            <div className="space-y-2 max-w-2xl">
+              <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wider text-[#9B2C2C]">
+                <MessageSquare className="w-4 h-4" />
+                <span>{t.navReviews || 'Reviews'}</span>
+              </div>
+              <h2 className="text-2xl sm:text-3xl font-serif font-bold text-[#241D17]">
+                {t.reviewsTitle || 'Reader Reviews & Culinary Comments'}
+              </h2>
+              <p className="text-sm text-[#5A4D40] leading-relaxed">
+                {t.reviewsSubtitle ||
+                  'Verified home cooks sharing festive results, dish feedback, and holiday stories across the globe.'}
+              </p>
+            </div>
+            <button
+              onClick={() => {
+                setCurrentPage('reviews');
+                window.scrollTo({ top: 0, behavior: 'smooth' });
+              }}
+              className="px-5 py-3 bg-[#9B2C2C] hover:bg-[#822424] text-white text-xs font-semibold rounded-xl transition-colors shadow-xs whitespace-nowrap shrink-0 flex items-center gap-2 cursor-pointer"
+            >
+              <MessageSquare className="w-4 h-4" />
+              <span>{t.leaveReview || 'Leave a Review & Comment'}</span>
+            </button>
+          </section>
         </main>
       )}
 
       {/* Footer */}
-      <footer className="mt-16 bg-[#241D17] text-[#D8CAB8] border-t border-[#3B3026]">
+      <footer className="mt-16 bg-[#241D17] text-[#D8CAB8] border-t border-[#3B3026] print:hidden">
         <div className="max-w-7xl mx-auto px-6 py-12 space-y-8">
           <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
             <div className="space-y-3">
               <span className="text-xl font-serif font-bold text-white block">
-                Yuletide Table
+                Naveed’s Table
               </span>
               <p className="text-xs text-[#A89886] leading-relaxed">
                 The premier international culinary repository and news journal for authentic global Christmas food, ancestral recipes, and holiday gastronomy. Founded by Naveed.
@@ -724,6 +920,17 @@ export default function App() {
                 Navigation & Editorial
               </h4>
               <ul className="space-y-1.5 text-xs text-[#BDB09E]">
+                <li>
+                  <button
+                    onClick={() => {
+                      setCurrentPage('reviews');
+                      window.scrollTo({ top: 0, behavior: 'smooth' });
+                    }}
+                    className="hover:text-white transition-colors text-left font-semibold text-white cursor-pointer"
+                  >
+                    {t.navReviews || 'Reviews'} & Community Comments
+                  </button>
+                </li>
                 <li>
                   <button
                     onClick={() => {
@@ -773,20 +980,20 @@ export default function App() {
 
             <div>
               <h4 className="text-xs font-semibold text-white uppercase tracking-wider mb-3">
-                Yuletide Culinary Bureau
+                Naveed’s Table Culinary Bureau
               </h4>
               <p className="text-xs text-[#A89886] leading-relaxed mb-3">
                 Published daily under international gastronomy, agricultural economics, and cultural heritage press standards.
               </p>
               <div className="text-[11px] text-[#8C7D6D]">
-                Headquartered in London & Paris · Global bureaus across Sydney, Montreal & Buenos Aires.
+                Headquartered in France · Global bureaus across Europe, Oceania, Americas, Asia & Africa.
               </div>
             </div>
           </div>
 
           <div className="pt-8 border-t border-[#3B3026] flex flex-col sm:flex-row items-center justify-between gap-4 text-xs text-[#8C7D6D]">
             <div className="flex flex-wrap items-center gap-2">
-              <span>© 2026 Yuletide Table Global Journal.</span>
+              <span>© 2026 Naveed’s Table Global Journal.</span>
               <span aria-hidden="true">·</span>
               <span>Founded by Naveed</span>
               <span aria-hidden="true">·</span>
@@ -808,28 +1015,34 @@ export default function App() {
               <a href="/robots.txt" className="hover:text-white transition-colors">
                 Robots.txt
               </a>
-              {/* Subtle Staff / Editor trigger */}
+              {/* Owner-Verified Staff Desk trigger */}
               <button
                 onClick={() => {
-                  setIsEditorMode((prev) => !prev);
+                  if (isOwnerAuthorized) {
+                    setIsOwnerAuthorized(false);
+                    setOwnerPasscode('');
+                  } else {
+                    setPasscodeError('');
+                    setIsOwnerLoginOpen(true);
+                  }
                 }}
-                className="hover:text-white transition-colors opacity-40 hover:opacity-100 flex items-center gap-1 cursor-pointer"
-                title="Staff editorial portal (or press Ctrl+Shift+E)"
+                className="hover:text-white transition-colors opacity-45 hover:opacity-100 flex items-center gap-1 cursor-pointer"
+                title="Owner verification portal"
               >
                 <Lock className="w-3 h-3" />
-                <span>Staff Desk</span>
+                <span>{isOwnerAuthorized ? 'Lock Owner Desk' : 'Staff Desk'}</span>
               </button>
             </div>
           </div>
         </div>
       </footer>
 
-      {/* Secret Floating Editor Desk (Only rendered when editor mode is enabled!) */}
-      {isEditorMode && (
-        <div className="fixed bottom-4 right-4 bg-[#241D17] text-white px-4 py-3 rounded-2xl shadow-2xl border border-white/20 flex items-center gap-3.5 z-50 text-xs animate-in fade-in duration-200">
+      {/* Owner-Verified Floating Editorial Desk (Strictly hidden unless authenticated as Naveed) */}
+      {isOwnerAuthorized && (
+        <div className="fixed bottom-4 right-4 bg-[#241D17] text-white px-4 py-3 rounded-2xl shadow-2xl border border-white/20 flex items-center gap-3.5 z-50 text-xs animate-in fade-in duration-200 print:hidden">
           <div className="flex items-center gap-1.5 text-amber-300 font-semibold">
             <Sparkles className="w-4 h-4" />
-            <span>Staff Editorial Mode</span>
+            <span>Owner Editorial Desk</span>
           </div>
           <button
             onClick={() => setIsGeneratorOpen(true)}
@@ -839,19 +1052,80 @@ export default function App() {
           </button>
           <button
             onClick={() => {
-              setIsEditorMode(false);
-              localStorage.setItem('yt_editor_mode', 'false');
+              setIsOwnerAuthorized(false);
+              setOwnerPasscode('');
             }}
             className="text-white/60 hover:text-white cursor-pointer px-1"
           >
-            Hide
+            Lock
           </button>
+        </div>
+      )}
+
+      {/* Owner Passcode Verification Modal */}
+      {isOwnerLoginOpen && (
+        <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-4 animate-in fade-in duration-150">
+          <div className="w-full max-w-md bg-white rounded-2xl shadow-2xl border border-[#E8DEC8] overflow-hidden">
+            <div className="px-6 py-4 bg-[#FAF7F2] border-b border-[#E8DEC8] flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <KeyRound className="w-4 h-4 text-[#9B2C2C]" />
+                <h3 className="text-base font-serif font-bold text-[#241D17]">
+                  Owner Permission Required
+                </h3>
+              </div>
+              <button
+                onClick={() => setIsOwnerLoginOpen(false)}
+                className="p-1 text-[#7A6C5F] hover:text-[#241D17] rounded-lg cursor-pointer"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+            <form onSubmit={handleVerifyOwner} className="p-6 space-y-4">
+              <p className="text-xs text-[#5A4D40] leading-relaxed">
+                Site media downloads, portrait changes, moderation, and the AI Editorial Desk are strictly protected under founder Naveed’s permission.
+              </p>
+              {passcodeError && (
+                <div className="p-3 bg-red-50 border border-red-200 rounded-xl text-xs text-[#9B2C2C] font-medium">
+                  {passcodeError}
+                </div>
+              )}
+              <div>
+                <label className="block text-[11px] font-bold uppercase tracking-wider text-[#7A6C5F] mb-1.5">
+                  Owner Passcode
+                </label>
+                <input
+                  type="password"
+                  value={passcodeInput}
+                  onChange={(e) => setPasscodeInput(e.target.value)}
+                  placeholder="Enter owner passcode..."
+                  autoFocus
+                  className="w-full px-3.5 py-2.5 text-sm bg-[#FAF7F2] border border-[#DDD2C0] rounded-xl text-[#241D17] focus:outline-none focus:ring-2 focus:ring-[#9B2C2C]/20 focus:border-[#9B2C2C]"
+                />
+              </div>
+              <div className="flex items-center justify-end gap-2 pt-2">
+                <button
+                  type="button"
+                  onClick={() => setIsOwnerLoginOpen(false)}
+                  className="px-4 py-2 text-xs font-medium text-[#665A4F] hover:text-[#241D17] cursor-pointer"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  disabled={isVerifyingOwner}
+                  className="px-4 py-2 text-xs font-semibold text-white bg-[#9B2C2C] hover:bg-[#822424] rounded-lg transition-colors cursor-pointer disabled:opacity-60"
+                >
+                  {isVerifyingOwner ? 'Verifying...' : 'Unlock Owner Controls'}
+                </button>
+              </div>
+            </form>
+          </div>
         </div>
       )}
 
       {/* Cookie Consent Banner */}
       {!cookieConsentDismissed && (
-        <div className="fixed bottom-4 left-4 right-4 md:left-auto md:right-6 md:w-96 bg-[#241D17] text-white p-4 rounded-xl shadow-2xl border border-white/10 z-50 animate-in fade-in slide-in-from-bottom-2 duration-300">
+        <div className="fixed bottom-4 left-4 right-4 md:left-auto md:right-6 md:w-96 bg-[#241D17] text-white p-4 rounded-xl shadow-2xl border border-white/10 z-50 animate-in fade-in slide-in-from-bottom-2 duration-300 print:hidden">
           <div className="flex items-start justify-between gap-3">
             <div className="text-xs space-y-1">
               <span className="font-semibold block text-[#F3EFE9]">Cookie & Privacy Notice</span>
@@ -871,7 +1145,11 @@ export default function App() {
 
       {/* Recipe Modal */}
       {activeRecipe && (
-        <RecipeModal recipe={activeRecipe} onClose={() => setActiveRecipe(null)} />
+        <RecipeModal
+          recipe={activeRecipe}
+          onClose={() => setActiveRecipe(null)}
+          isOwnerAuthorized={isOwnerAuthorized}
+        />
       )}
 
       {/* Blog Reader Modal with SEO Inspector & Instant Multi-Language Translation */}
@@ -886,12 +1164,17 @@ export default function App() {
               setActiveRecipe(found);
             }
           }}
+          onNavigateSection={(sectionId) => {
+            setActiveBlogPost(null);
+            navigateToSection(sectionId);
+          }}
           currentLang={currentLang}
           onLanguageChange={handleLanguageSelect}
+          isOwnerAuthorized={isOwnerAuthorized}
         />
       )}
 
-      {/* AI Research & Generator Modal (Hidden from visitors) */}
+      {/* AI Research & Generator Modal (Owner-Restricted) */}
       <AiBlogGeneratorModal
         isOpen={isGeneratorOpen}
         onClose={() => setIsGeneratorOpen(false)}
@@ -900,6 +1183,7 @@ export default function App() {
           setActiveBlogPost(newPost);
         }}
         categories={categories}
+        ownerPasscode={ownerPasscode}
       />
 
       {/* About, Standards, Contact, & Privacy Modal */}

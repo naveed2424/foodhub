@@ -17,6 +17,7 @@ interface AiBlogGeneratorModalProps {
   onClose: () => void;
   onPostCreated: (post: BlogPost) => void;
   categories: string[];
+  ownerPasscode?: string;
 }
 
 export const AiBlogGeneratorModal: React.FC<AiBlogGeneratorModalProps> = ({
@@ -24,6 +25,7 @@ export const AiBlogGeneratorModal: React.FC<AiBlogGeneratorModalProps> = ({
   onClose,
   onPostCreated,
   categories,
+  ownerPasscode = '',
 }) => {
   if (!isOpen) return null;
 
@@ -33,11 +35,11 @@ export const AiBlogGeneratorModal: React.FC<AiBlogGeneratorModalProps> = ({
   const [error, setError] = useState<string | null>(null);
 
   const sampleTrendingPrompts = [
+    "Write today's best and trending topic",
     '2026 European Christmas Market Spices: Price Volatility in Cinnamon and Cloves',
-    'The Rise of Chilled Seafood and Tropical Fruits on Southern Hemisphere Christmas Tables',
-    'Rediscovering Saffron Lussekatter: Ancient Nordic Solstice and Christmas Breads',
-    'Plant-Based Roast Showstoppers: How Root Vegetables Are Replacing Traditional Turkeys',
-    'Pan de Jamón in Caracas: The Century-Old Heritage of Venezuelan Christmas Eve',
+    'The Rise of Chilled Seafood and Tropical Fruits on Southern Hemisphere Holiday Tables',
+    'Winter Fermentation Revival: Probiotic Polish Zakwas & Nordic Preserving Crafts',
+    'Single-Origin Andean Cacao & Specialty Coffee Trends in 2026 Holiday Baking',
   ];
 
   const handleGenerate = async (customTopic?: string) => {
@@ -49,7 +51,10 @@ export const AiBlogGeneratorModal: React.FC<AiBlogGeneratorModalProps> = ({
     try {
       const response = await fetch('/api/generate-blog', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+          'Content-Type': 'application/json',
+          'x-owner-passcode': ownerPasscode,
+        },
         body: JSON.stringify({
           topic: topicToUse || undefined,
           category: selectedCategory,
@@ -99,15 +104,15 @@ export const AiBlogGeneratorModal: React.FC<AiBlogGeneratorModalProps> = ({
 
         {/* Body */}
         <div className="p-6 space-y-6">
-          {/* Cadence Info Banner */}
+          {/* Registered SEO Prompt Banner */}
           <div className="p-4 bg-[#F9F5EE] border border-[#EADBCC] rounded-xl flex items-start gap-3">
             <Clock className="w-5 h-5 text-[#82532B] shrink-0 mt-0.5" />
             <div className="text-xs space-y-1">
               <div className="font-semibold text-[#241D17]">
-                Automated Publishing Protocol: 2 Articles / 24 Hours (12h Gap)
+                Registered Naveed’s Table SEO Protocol Active (6 Niches · 2,000+ Word Structure)
               </div>
               <p className="text-[#665A4F] leading-relaxed">
-                The integrated content robot autonomously gathers holiday trends, verifies data against culinary records, structures H2/H3 semantic sections, and generates full SEO meta tags and Schema.org markup.
+                Your custom journalistic SEO prompt is permanently registered until updated: it builds CTR headlines, Meta Title/Description, H2/H3 structures, bullet points, statistics, 4 image ALT tags, internal/external links, Key Takeaways, FAQs, and CTA automatically. Simply trigger “Write today’s best and trending topic”.
               </p>
             </div>
           </div>
@@ -180,7 +185,7 @@ export const AiBlogGeneratorModal: React.FC<AiBlogGeneratorModalProps> = ({
         {/* Footer */}
         <div className="px-6 py-4 border-t border-[#F0EAE1] bg-[#FAF7F2] flex items-center justify-between">
           <div className="text-xs text-[#7A6C5F]">
-            Powered by Gemini 3.8 Flash
+            Powered by Gemini 4 Hydrogen · Registered SEO Prompt
           </div>
 
           <div className="flex items-center gap-2">

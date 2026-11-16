@@ -40,6 +40,7 @@ export const InteractiveMap: React.FC<InteractiveMapProps> = ({
     { label: 'Australia & Oceania', value: 'Australia & Oceania' },
     { label: 'South America', value: 'South America' },
     { label: 'North America', value: 'North America' },
+    { label: 'Asia & Africa', value: 'Asia & Africa' },
   ];
 
   return (
@@ -49,7 +50,7 @@ export const InteractiveMap: React.FC<InteractiveMapProps> = ({
         <div>
           <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wider text-[#9B2C2C]">
             <Compass className="w-4 h-4" />
-            <span>Geographic Yuletide Atlas</span>
+            <span>Geographic Festive Atlas</span>
           </div>
           <h2 className="text-2xl md:text-3xl font-serif text-[#241D17] mt-1">
             Global Christmas Flavor Map
@@ -240,22 +241,26 @@ export const InteractiveMap: React.FC<InteractiveMapProps> = ({
       </div>
 
       {/* Mini Regional Quick Jump Strip */}
-      <div className="mt-4 grid grid-cols-2 sm:grid-cols-4 gap-3 text-xs">
+      <div className="mt-4 grid grid-cols-2 sm:grid-cols-5 gap-3 text-xs">
         <div className="p-2.5 bg-[#FAF4EB] rounded-lg border border-[#EDE3D2]">
           <span className="font-semibold text-[#241D17] block">Europe</span>
-          <span className="text-[#7A6C5F] text-[11px]">Panettone, Stollen, Roast Goose</span>
+          <span className="text-[#7A6C5F] text-[11px]">Barszcz, Vanillekipferl, Boeuf</span>
         </div>
         <div className="p-2.5 bg-[#FAF4EB] rounded-lg border border-[#EDE3D2]">
           <span className="font-semibold text-[#241D17] block">Australia & Oceania</span>
-          <span className="text-[#7A6C5F] text-[11px]">Summer Pavlova, King Prawns</span>
+          <span className="text-[#7A6C5F] text-[11px]">Manuka Ham, Pavlova, Prawns</span>
         </div>
         <div className="p-2.5 bg-[#FAF4EB] rounded-lg border border-[#EDE3D2]">
           <span className="font-semibold text-[#241D17] block">South America</span>
-          <span className="text-[#7A6C5F] text-[11px]">Pan de Jamón, Buñuelos, Vitel Toné</span>
+          <span className="text-[#7A6C5F] text-[11px]">Pavo Relleno, Pan de Jamón</span>
         </div>
         <div className="p-2.5 bg-[#FAF4EB] rounded-lg border border-[#EDE3D2]">
           <span className="font-semibold text-[#241D17] block">North America</span>
-          <span className="text-[#7A6C5F] text-[11px]">Quebec Tourtière, Tamales de Mole</span>
+          <span className="text-[#7A6C5F] text-[11px]">Tourtière, Tamales, Squash</span>
+        </div>
+        <div className="p-2.5 bg-[#FAF4EB] rounded-lg border border-[#EDE3D2]">
+          <span className="font-semibold text-[#241D17] block">Asia & Africa</span>
+          <span className="text-[#7A6C5F] text-[11px]">Doro Wat, Bibingka, Hashweh</span>
         </div>
       </div>
     </div>

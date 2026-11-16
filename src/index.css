@@ -32,3 +32,38 @@
 ::-webkit-scrollbar-thumb:hover {
   background: #B8A89A;
 }
+
+/* Content & Photo Protection for unauthorized visitors */
+.protected-media {
+  -webkit-user-select: none;
+  -moz-user-select: none;
+  user-select: none;
+  -webkit-touch-callout: none;
+  -webkit-user-drag: none;
+}
+
+@media print {
+  @page {
+    margin: 14mm;
+    size: auto;
+  }
+
+  html,
+  body {
+    background: #ffffff !important;
+    color: #1c1917 !important;
+    height: auto !important;
+    overflow: visible !important;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+
+  .no-print-unauthorized {
+    display: none !important;
+  }
+
+  .print-avoid-break {
+    break-inside: avoid;
+    page-break-inside: avoid;
+  }
+}

@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { BlogPost } from '../data/posts';
+import { RECIPES_DATA, Recipe } from '../data/recipes';
 import { SUPPORTED_LANGUAGES, TRANSLATIONS } from '../data/translations';
 import {
   X,
@@ -18,22 +19,30 @@ import {
   Printer,
   Globe,
   Loader2,
+  Utensils,
+  Lock,
+  ExternalLink,
+  Link2,
 } from 'lucide-react';
 
 interface BlogReaderModalProps {
   post: BlogPost | null;
   onClose: () => void;
   onNavigateRecipe?: (recipeSlug: string) => void;
+  onNavigateSection?: (sectionId: string) => void;
   currentLang: string;
   onLanguageChange: (langCode: string) => void;
+  isOwnerAuthorized?: boolean;
 }
 
 export const BlogReaderModal: React.FC<BlogReaderModalProps> = ({
   post: initialPost,
   onClose,
   onNavigateRecipe,
+  onNavigateSection,
   currentLang,
   onLanguageChange,
+  isOwnerAuthorized = false,
 }) => {
   if (!initialPost) return null;
 
@@ -118,7 +127,7 @@ export const BlogReaderModal: React.FC<BlogReaderModalProps> = ({
     },
     publisher: {
       '@type': 'Organization',
-      name: 'Yuletide Table Global Journal',
+      name: "Naveed's Table Global Journal",
       logo: {
         '@type': 'ImageObject',
         url: window.location.origin + '/images/hero_christmas_feast_1794320880047.jpg',
@@ -191,14 +200,16 @@ export const BlogReaderModal: React.FC<BlogReaderModalProps> = ({
               <Share2 className="w-4 h-4" />
               <span className="hidden sm:inline">{copied ? 'Copied!' : 'Share'}</span>
             </button>
-            <button
-              onClick={() => window.print()}
-              className="p-2 text-[#7A6C5F] hover:text-[#241D17] hover:bg-[#F0EAE1] rounded-lg transition-colors text-xs flex items-center gap-1.5"
-              title="Print Article"
-            >
-              <Printer className="w-4 h-4" />
-              <span className="hidden sm:inline">Print</span>
-            </button>
+            {isOwnerAuthorized && (
+              <button
+                onClick={() => window.print()}
+                className="p-2 text-[#7A6C5F] hover:text-[#241D17] hover:bg-[#F0EAE1] rounded-lg transition-colors text-xs flex items-center gap-1.5"
+                title="Print Article (Owner Authorized)"
+              >
+                <Printer className="w-4 h-4" />
+                <span className="hidden sm:inline">Print</span>
+              </button>
+            )}
             <button
               onClick={onClose}
               className="p-2 text-[#7A6C5F] hover:text-[#9B2C2C] hover:bg-[#FCE8E8] rounded-lg transition-colors ml-1"
@@ -283,18 +294,38 @@ export const BlogReaderModal: React.FC<BlogReaderModalProps> = ({
                 </div>
               </div>
 
-              {/* Featured Image */}
+              {/* Featured Image (Protected unless Owner Authorized) */}
               <figure className="space-y-2">
-                <div className="rounded-xl overflow-hidden aspect-[16/9] shadow-md border border-[#E8DEC8]">
+                <div
+                  onContextMenu={(e) => {
+                    if (!isOwnerAuthorized) e.preventDefault();
+                  }}
+                  onDragStart={(e) => {
+                    if (!isOwnerAuthorized) e.preventDefault();
+                  }}
+                  className={`relative rounded-xl overflow-hidden aspect-[16/9] shadow-md border border-[#E8DEC8] ${
+                    !isOwnerAuthorized ? 'protected-media' : ''
+                  }`}
+                >
                   <img
                     src={displayedPost.featuredImage.url}
                     alt={displayedPost.featuredImage.alt}
-                    className="w-full h-full object-cover"
+                    draggable={isOwnerAuthorized}
+                    className={`w-full h-full object-cover ${
+                      !isOwnerAuthorized ? 'pointer-events-none select-none' : ''
+                    }`}
                     onError={(e) => {
                       (e.currentTarget as HTMLImageElement).src =
                         '/images/hero_christmas_feast_1794320880047.jpg';
                     }}
                   />
+                  {!isOwnerAuthorized && (
+                    <div
+                      aria-hidden="true"
+                      onContextMenu={(e) => e.preventDefault()}
+                      className="absolute inset-0 z-10 bg-transparent"
+                    />
+                  )}
                 </div>
                 {displayedPost.featuredImage.caption && (
                   <figcaption className="text-xs text-[#7A6C5F] italic text-center">
@@ -304,7 +335,7 @@ export const BlogReaderModal: React.FC<BlogReaderModalProps> = ({
               </figure>
 
               {/* AdSense Compliant Banner Slot */}
-              <div className="p-3 bg-[#FAF8F5] border border-dashed border-[#DDD2C0] rounded-lg text-center my-6">
+              <div className="p-3 bg-[#FAF8F5] border border-dashed border-[#DDD2C0] rounded-lg text-center my-6 print:hidden">
                 <span className="text-[10px] uppercase tracking-wider text-[#9C8F80] block font-medium">
                   Advertisement · Google AdSense Verified Placement
                 </span>
@@ -314,11 +345,7 @@ export const BlogReaderModal: React.FC<BlogReaderModalProps> = ({
               </div>
 
               {/* Introduction */}
-              <div
-                className={`text-lg text-[#3D332A] leading-relaxed font-serif italic ${
-                  isRtl ? 'border-r-2 pr-4 border-[#9B2C2C]' : 'border-l-2 pl-4 border-[#9B2C2C]'
-                }`}
-              >
+              <div className="text-lg text-[#3D332A] leading-relaxed font-serif italic py-4 border-y border-[#E8DEC8]">
                 {displayedPost.introduction}
               </div>
 
@@ -363,6 +390,62 @@ export const BlogReaderModal: React.FC<BlogReaderModalProps> = ({
                         </p>
                       </div>
                     ))}
+
+                    {/* Culinary & Research Bullet Points */}
+                    {section.bulletPoints && section.bulletPoints.length > 0 && (
+                      <ul className="space-y-2 py-2 text-sm text-[#473B30]">
+                        {section.bulletPoints.map((pt, bIdx) => (
+                          <li key={bIdx} className="flex items-start gap-2.5">
+                            <span className="w-1.5 h-1.5 rounded-full bg-[#82532B] mt-2 shrink-0" />
+                            <span className="leading-relaxed">{pt}</span>
+                          </li>
+                        ))}
+                      </ul>
+                    )}
+
+                    {/* In-Content Reference Image (with Owner Protection) */}
+                    {section.image && (section.image.url || displayedPost.featuredImage.url) && (
+                      <figure className="space-y-2 pt-2">
+                        <div
+                          onContextMenu={(e) => {
+                            if (!isOwnerAuthorized) e.preventDefault();
+                          }}
+                          onDragStart={(e) => {
+                            if (!isOwnerAuthorized) e.preventDefault();
+                          }}
+                          className={`relative rounded-xl overflow-hidden aspect-[4/3] max-h-[420px] w-full shadow-sm border border-[#E8DEC8] ${
+                            !isOwnerAuthorized ? 'protected-media' : ''
+                          }`}
+                        >
+                          <img
+                            src={section.image.url || displayedPost.featuredImage.url}
+                            alt={section.image.alt}
+                            draggable={isOwnerAuthorized}
+                            referrerPolicy="no-referrer"
+                            className={`w-full h-full object-cover ${
+                              !isOwnerAuthorized ? 'pointer-events-none select-none' : ''
+                            }`}
+                            onError={(e) => {
+                              (e.currentTarget as HTMLImageElement).src =
+                                displayedPost.featuredImage.url ||
+                                '/images/hero_christmas_feast_1794320880047.jpg';
+                            }}
+                          />
+                          {!isOwnerAuthorized && (
+                            <div
+                              aria-hidden="true"
+                              onContextMenu={(e) => e.preventDefault()}
+                              className="absolute inset-0 z-10 bg-transparent"
+                            />
+                          )}
+                        </div>
+                        {(section.image.caption || section.image.alt) && (
+                          <figcaption className="text-xs font-serif text-[#7A6C5F] italic text-center">
+                            {section.image.caption || section.image.alt}
+                          </figcaption>
+                        )}
+                      </figure>
+                    )}
                   </section>
                 ))}
               </div>
@@ -382,6 +465,194 @@ export const BlogReaderModal: React.FC<BlogReaderModalProps> = ({
                   ))}
                 </ul>
               </div>
+
+              {/* Complete Recipes Around This Article */}
+              {(() => {
+                const slugs = new Set<string>(displayedPost.relatedRecipeSlugs || []);
+                displayedPost.internalLinks?.forEach((l) => {
+                  const m = l.url.match(/\/recipes\/([a-z0-9-]+)/i);
+                  if (m) slugs.add(m[1]);
+                });
+                const connectedRecipes = Array.from(slugs)
+                  .map((s) => RECIPES_DATA.find((r) => r.slug === s))
+                  .filter((r): r is Recipe => Boolean(r));
+
+                if (connectedRecipes.length === 0) return null;
+
+                return (
+                  <div className="space-y-4 pt-6 border-t border-[#E8DEC8]">
+                    <div className="flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-[#82532B]">
+                      <Utensils className="w-4 h-4 text-[#9B2C2C]" />
+                      <span>{t.relatedRecipesHeading}</span>
+                    </div>
+
+                    <div className="grid grid-cols-1 gap-4">
+                      {connectedRecipes.map((rec) => (
+                        <div
+                          key={rec.id}
+                          className="bg-[#FAF7F2] border border-[#E4D9C5] rounded-2xl p-5 space-y-4"
+                        >
+                          <div className="flex flex-col sm:flex-row gap-4 items-start">
+                            <div
+                              onContextMenu={(e) => {
+                                if (!isOwnerAuthorized) e.preventDefault();
+                              }}
+                              className="relative w-full sm:w-40 aspect-[4/3] rounded-xl overflow-hidden shrink-0 border border-[#E0D5C1]"
+                            >
+                              <img
+                                src={rec.image}
+                                alt={rec.imageAlt}
+                                draggable={isOwnerAuthorized}
+                                className="w-full h-full object-cover"
+                              />
+                              {!isOwnerAuthorized && (
+                                <div className="absolute inset-0 z-10 bg-transparent" />
+                              )}
+                            </div>
+
+                            <div className="flex-1 space-y-2">
+                              <div className="flex flex-wrap items-center gap-2 text-xs text-[#82532B]">
+                                <span>{rec.country}</span>
+                                <span aria-hidden="true">·</span>
+                                <span>{rec.region}</span>
+                                <span aria-hidden="true">·</span>
+                                <span className="tabular-nums">
+                                  {rec.prepTimeMinutes + rec.cookTimeMinutes} {t.readTime}
+                                </span>
+                                <span aria-hidden="true">·</span>
+                                <span className="tabular-nums">
+                                  {rec.servings} {t.servings}
+                                </span>
+                              </div>
+
+                              <h4 className="text-lg font-serif font-bold text-[#241D17]">
+                                {rec.name}
+                              </h4>
+
+                              <p className="text-xs text-[#5A4D40] leading-relaxed">
+                                {rec.description}
+                              </p>
+                            </div>
+                          </div>
+
+                          {/* Ingredients & Steps Summary inside the Blog */}
+                          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-3 border-t border-[#E8DEC8] text-xs">
+                            <div className="space-y-1.5">
+                              <div className="font-bold text-[#241D17] uppercase tracking-wider text-[11px]">
+                                {t.ingredients}
+                              </div>
+                              <ul className="space-y-1 text-[#4E4237]">
+                                {rec.ingredients.slice(0, 6).map((ing, iIdx) => (
+                                  <li key={iIdx} className="flex justify-between gap-2">
+                                    <span>{ing.item}</span>
+                                    <span className="font-mono tabular-nums text-[#82532B] shrink-0">
+                                      {ing.amount} {ing.unit}
+                                    </span>
+                                  </li>
+                                ))}
+                              </ul>
+                            </div>
+
+                            <div className="space-y-1.5">
+                              <div className="font-bold text-[#241D17] uppercase tracking-wider text-[11px]">
+                                {t.cookingDirections}
+                              </div>
+                              <ol className="space-y-1.5 text-[#4E4237]">
+                                {rec.instructions.slice(0, 3).map((st) => (
+                                  <li key={st.step}>
+                                    <span className="font-semibold text-[#241D17]">
+                                      {st.step}. {st.title}:{' '}
+                                    </span>
+                                    <span className="line-clamp-2">{st.text}</span>
+                                  </li>
+                                ))}
+                              </ol>
+                            </div>
+                          </div>
+
+                          {onNavigateRecipe && (
+                            <div className="pt-2 flex justify-end">
+                              <button
+                                onClick={() => onNavigateRecipe(rec.slug)}
+                                className="px-4 py-2 text-xs font-semibold text-white bg-[#9B2C2C] hover:bg-[#822424] rounded-lg transition-colors inline-flex items-center gap-1.5 cursor-pointer"
+                              >
+                                <span>{t.openFullRecipe}</span>
+                                <ArrowRight className="w-3.5 h-3.5" />
+                              </button>
+                            </div>
+                          )}
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                );
+              })()}
+
+              {/* Internal & External SEO Links Section */}
+              {((displayedPost.internalLinks && displayedPost.internalLinks.length > 0) ||
+                (displayedPost.externalSources && displayedPost.externalSources.length > 0)) && (
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-6 border-t border-[#E8DEC8]">
+                  {displayedPost.internalLinks && displayedPost.internalLinks.length > 0 && (
+                    <div className="p-4 bg-[#FAF7F2] border border-[#E8DEC8] rounded-xl space-y-2.5">
+                      <div className="flex items-center gap-1.5 text-xs font-bold uppercase tracking-wider text-[#82532B]">
+                        <Link2 className="w-3.5 h-3.5 text-[#9B2C2C]" />
+                        <span>Explore Next on Naveed’s Table</span>
+                      </div>
+                      <ul className="space-y-2 text-xs">
+                        {displayedPost.internalLinks.map((lnk, lIdx) => {
+                          const recipeMatch = lnk.url.match(/\/recipes\/([a-z0-9-]+)/i);
+                          return (
+                            <li key={lIdx} className="space-y-0.5">
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  if (recipeMatch && onNavigateRecipe) {
+                                    onNavigateRecipe(recipeMatch[1]);
+                                  } else if (lnk.url.includes('map') && onNavigateSection) {
+                                    onClose();
+                                    onNavigateSection('map-section');
+                                  } else if (onNavigateSection) {
+                                    onClose();
+                                    onNavigateSection('recipes-section');
+                                  }
+                                }}
+                                className="font-semibold text-[#9B2C2C] hover:underline text-left cursor-pointer"
+                              >
+                                {lnk.text}
+                              </button>
+                              <p className="text-[#665A4F] leading-snug">{lnk.context}</p>
+                            </li>
+                          );
+                        })}
+                      </ul>
+                    </div>
+                  )}
+
+                  {displayedPost.externalSources && displayedPost.externalSources.length > 0 && (
+                    <div className="p-4 bg-[#FAF7F2] border border-[#E8DEC8] rounded-xl space-y-2.5">
+                      <div className="flex items-center gap-1.5 text-xs font-bold uppercase tracking-wider text-[#82532B]">
+                        <ExternalLink className="w-3.5 h-3.5 text-[#9B2C2C]" />
+                        <span>Verified References & Cultural Archives</span>
+                      </div>
+                      <ul className="space-y-2 text-xs">
+                        {displayedPost.externalSources.map((src, sIdx) => (
+                          <li key={sIdx}>
+                            <a
+                              href={src.url}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="inline-flex items-center gap-1.5 font-medium text-[#241D17] hover:text-[#9B2C2C] hover:underline"
+                            >
+                              <span>{src.name}</span>
+                              <ExternalLink className="w-3 h-3 shrink-0 opacity-70" />
+                            </a>
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  )}
+                </div>
+              )}
 
               {/* FAQ Section */}
               {displayedPost.faq.length > 0 && (
@@ -495,7 +766,7 @@ export const BlogReaderModal: React.FC<BlogReaderModalProps> = ({
         {/* Modal Footer */}
         <div className="px-6 py-3.5 border-t border-[#F0EAE1] bg-[#FAF7F2] flex items-center justify-between shrink-0">
           <div className="text-xs text-[#7A6C5F]">
-            Yuletide Table · Multilingual Food Journal ({activeLangObj.nativeName})
+            Naveed’s Table · Multilingual Food Journal ({activeLangObj.nativeName})
           </div>
           <button
             onClick={onClose}

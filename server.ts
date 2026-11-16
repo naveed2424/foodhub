@@ -33,16 +33,64 @@ import { BlogPost, INITIAL_POSTS, CATEGORIES_LIST } from './src/data/posts.ts';
 export type { BlogPost };
 
 const POSTS_FILE = path.join(__dirname, 'posts_store.json');
+const REVIEWS_FILE = path.join(__dirname, 'reviews_store.json');
+const OWNER_PASSCODE = process.env.OWNER_PASSCODE || 'NAVEED2026';
 
+function isValidOwner(req: Request): boolean {
+  const headerCode = String(req.headers['x-owner-passcode'] || '');
+  return headerCode.length > 0 && headerCode === OWNER_PASSCODE;
+}
 
-// Helper to get or save posts
+// Permanently registered SEO Prompt (active until founder Naveed requests changes)
+export const REGISTERED_SEO_PROMPT = `Act as a professional journalist, SEO expert, and content strategist for "Naveed's Table" (founded by Naveed · Based in France), an AdSense-ready culinary journalism and global heritage recipe publication with 6 core SEO categories.
+Write a detailed, engaging, fact-based article of at least 2000 words across sections with a featured image and 4 in-content image sections (all with descriptive SEO ALT text and placement notes), strictly covering:
+- CTR-focused emotional & SEO-optimized headline + Meta Title (50-60 chars) + Meta Description (150-160 chars)
+- Primary keyword + 3-6 related secondary keywords
+- Engaging introduction + clear background/context for beginners
+- Well-structured H2 and H3 headings using bullet points and short paragraphs for readability covering: latest developments, key facts/data/statistics, expert opinions, real-world impact on people/economy/culture
+- Key Takeaways / Quick Summary list
+- 2-5 Internal Linking suggestions to Naveed's Table recipes (/recipes/...) or pages (/map, /reviews)
+- 1-3 External Authoritative Sources (FAO, UNESCO, ICCO, Culinary Institutes)
+- Short FAQ section (2-4 questions) + Strong Conclusion & Future Outlook + Call-To-Action (CTA)`;
+
+// Pool of realistic site culinary photographs (strictly excluding Naveed's personal photos)
+const CULINARY_PHOTO_POOL: Array<{ url: string; captionHint: string }> = [
+  { url: '/images/hero_christmas_feast_1794320880047.jpg', captionHint: 'Candlelit festive holiday dinner spread' },
+  { url: '/images/poland_barszcz_featured_1794860787846.jpg', captionHint: 'Ruby fermented beetroot barszcz with mushroom uszka' },
+  { url: '/images/sweden_lussekatter_featured_1794860790080.jpg', captionHint: 'Golden Swedish saffron Lussekatter buns' },
+  { url: '/images/philippines_bibingka_featured_1794860790274.jpg', captionHint: 'Smoky banana-leaf Philippine Bibingka rice cake' },
+  { url: '/images/ethiopia_dorowat_featured_1794860791298.jpg', captionHint: 'Ethiopian Genna Doro Wat crimson spiced stew over injera' },
+  { url: '/images/peru_pavo_featured_1794860792713.jpg', captionHint: 'Peruvian ají panca glazed Nochebuena roast turkey' },
+  { url: '/images/uk_pudding_featured_1794860793634.jpg', captionHint: 'Steamed British flaming Christmas pudding with holly' },
+  { url: '/images/austria_kipferl_featured_1794860795105.jpg', captionHint: 'Viennese vanilla crescent Vanillekipferl cookies' },
+  { url: '/images/japan_cake_featured_1794860795845.jpg', captionHint: 'Japanese Christmas whipped strawberry shortcake' },
+  { url: '/images/nz_ham_featured_1794860796893.jpg', captionHint: 'New Zealand Manuka honey-glazed Christmas ham' },
+  { url: '/images/lebanon_hashweh_featured_1794860798279.jpg', captionHint: 'Lebanese spiced Hashweh rice with toasted pine nuts' },
+  { url: '/images/blog_christmas_boeuf_1794690224587.jpg', captionHint: 'Herb-crusted French Boeuf Wellington roast' },
+  { url: '/images/blog_christmas_chicken_1794690225149.jpg', captionHint: 'Cast-iron French roast chicken with chestnuts and herbs' },
+  { url: '/images/blog_christmas_fish_veg_1794690225620.jpg', captionHint: 'Herb-crusted Christmas salmon and chestnut mushroom crown' },
+];
+
+// Helper to get or save posts (merges & syncs INITIAL_POSTS while keeping AI-generated articles)
 function getStoredPosts(): BlogPost[] {
   try {
     if (fs.existsSync(POSTS_FILE)) {
       const data = fs.readFileSync(POSTS_FILE, 'utf-8');
-      const posts = JSON.parse(data);
-      if (Array.isArray(posts) && posts.length > 0) {
-        return posts;
+      const stored = JSON.parse(data);
+      if (Array.isArray(stored) && stored.length > 0) {
+        const storedById = new Map<string, BlogPost>(stored.map((p: BlogPost) => [p.id, p]));
+        const missingInitial = INITIAL_POSTS.filter((p) => !storedById.has(p.id));
+        const syncedExisting = stored.map((p: BlogPost) => {
+          const initialMatch = INITIAL_POSTS.find((ip) => ip.id === p.id);
+          if (!initialMatch || p.isAiGenerated) return p;
+          return initialMatch;
+        });
+        if (missingInitial.length > 0) {
+          const merged = [...syncedExisting, ...missingInitial];
+          savePosts(merged);
+          return merged;
+        }
+        return syncedExisting;
       }
     }
   } catch (err) {
@@ -62,6 +110,108 @@ function savePosts(posts: BlogPost[]) {
 // Ensure initial file exists
 if (!fs.existsSync(POSTS_FILE)) {
   savePosts(INITIAL_POSTS);
+}
+
+interface StoredReviewComment {
+  id: string;
+  author: string;
+  text: string;
+  createdAt: string;
+}
+
+interface StoredReviewItem {
+  id: string;
+  author: string;
+  location?: string;
+  topic: string;
+  category: string;
+  rating: number;
+  comment: string;
+  createdAt: string;
+  comments: StoredReviewComment[];
+}
+
+const DEFAULT_REVIEWS: StoredReviewItem[] = [
+  {
+    id: 'rev-1',
+    author: 'Camille Laurent',
+    location: 'Lyon, France',
+    topic: 'French Christmas Boeuf Wellington & Red Wine Jus',
+    category: 'Beef / Boeuf',
+    rating: 5,
+    comment:
+      'Followed the 52°C pull temperature and let the mushroom duxelles cook completely dry. The pastry stayed crisp all the way around and the Burgundy red wine jus was sensational on Christmas Eve.',
+    createdAt: '2026-11-14T11:20:00Z',
+    comments: [
+      {
+        id: 'c-101',
+        author: 'Naveed (Founder · France)',
+        text: 'Merci Camille! Resting 15 minutes on the wooden board before slicing makes all the difference for that rosy medium-rare finish.',
+        createdAt: '2026-11-14T12:05:00Z',
+      },
+    ],
+  },
+  {
+    id: 'rev-2',
+    author: 'Min-ji Park (박민지)',
+    location: 'Seoul, South Korea',
+    topic: 'French Christmas Roast Chicken with Chestnuts, Lemon & Tarragon',
+    category: 'Chicken',
+    rating: 5,
+    comment:
+      'Reading the full Korean translation automatically made following every step effortless! Roasting the chestnuts directly inside the Dutch oven with garlic and tarragon filled our entire apartment with warmth.',
+    createdAt: '2026-11-13T18:40:00Z',
+    comments: [],
+  },
+  {
+    id: 'rev-3',
+    author: 'Omar Al-Mansoor (عمر المنصور)',
+    location: 'Dubai, UAE',
+    topic: 'Nordic-French Herb-Crusted Christmas Salmon with Dill & Pomegranate',
+    category: 'Fish & Vegetarian',
+    rating: 5,
+    comment:
+      'Gentle 165°C oven temperature kept the salmon silky without drying out, and the ruby pomegranate seeds over green dill looked festive on our family table.',
+    createdAt: '2026-11-12T15:10:00Z',
+    comments: [],
+  },
+  {
+    id: 'rev-4',
+    author: 'Sophie Tremblay',
+    location: 'Montreal, Canada',
+    topic: 'Tourtière Québécoise du Réveillon',
+    category: 'Desserts & Heritage',
+    rating: 5,
+    comment:
+      'Authentic clove and cinnamon ratio just like my grandmother’s Réveillon pie. The serving scaler helped us adjust seamlessly for 14 guests.',
+    createdAt: '2026-11-10T20:15:00Z',
+    comments: [],
+  },
+];
+
+function getStoredReviews(): StoredReviewItem[] {
+  try {
+    if (fs.existsSync(REVIEWS_FILE)) {
+      const data = fs.readFileSync(REVIEWS_FILE, 'utf-8');
+      const parsed = JSON.parse(data);
+      if (Array.isArray(parsed)) return parsed;
+    }
+  } catch (err) {
+    console.warn('Error reading reviews file, using defaults', err);
+  }
+  return DEFAULT_REVIEWS;
+}
+
+function saveReviews(reviews: StoredReviewItem[]) {
+  try {
+    fs.writeFileSync(REVIEWS_FILE, JSON.stringify(reviews, null, 2), 'utf-8');
+  } catch (err) {
+    console.error('Error saving reviews to file', err);
+  }
+}
+
+if (!fs.existsSync(REVIEWS_FILE)) {
+  saveReviews(DEFAULT_REVIEWS);
 }
 
 // Schedule state tracker
@@ -161,7 +311,10 @@ Return STRICT JSON matching this format:
       "content": string,
       "subsections": [
         { "subheading": string, "content": string }
-      ]
+      ],
+      "bulletPoints": string[],
+      "imageCaption": string,
+      "imageAlt": string
     }
   ],
   "keyTakeaways": string[],
@@ -174,7 +327,7 @@ Return STRICT JSON matching this format:
 `;
 
     const response = await ai.models.generateContent({
-      model: 'gemini-3.8-flash',
+      model: 'gemini-4-hydrogen',
       contents: prompt,
       config: {
         responseMimeType: 'application/json',
@@ -194,11 +347,19 @@ Return STRICT JSON matching this format:
         ...sec,
         heading: parsed.sections?.[idx]?.heading || sec.heading,
         content: parsed.sections?.[idx]?.content || sec.content,
+        bulletPoints: parsed.sections?.[idx]?.bulletPoints || sec.bulletPoints,
         subsections: (sec.subsections || []).map((sub, sIdx) => ({
           ...sub,
           subheading: parsed.sections?.[idx]?.subsections?.[sIdx]?.subheading || sub.subheading,
           content: parsed.sections?.[idx]?.subsections?.[sIdx]?.content || sub.content,
         })),
+        image: sec.image
+          ? {
+              ...sec.image,
+              alt: parsed.sections?.[idx]?.imageAlt || sec.image.alt,
+              caption: parsed.sections?.[idx]?.imageCaption || sec.image.caption,
+            }
+          : undefined,
       })),
       keyTakeaways: parsed.keyTakeaways || original.keyTakeaways,
       faq: parsed.faq || original.faq,
@@ -228,9 +389,112 @@ app.get('/api/schedule-status', (_req: Request, res: Response) => {
   });
 });
 
-// Automated/On-Demand Blog Generator Endpoint using Gemini AI
+// Owner Verification Endpoint
+app.post('/api/verify-owner', (req: Request, res: Response) => {
+  const { passcode } = req.body || {};
+  if (typeof passcode === 'string' && passcode === OWNER_PASSCODE) {
+    res.json({ authorized: true });
+    return;
+  }
+  res.status(403).json({ authorized: false, error: 'Unauthorized owner passcode.' });
+});
+
+// Community Reviews & Comments Endpoints
+app.get('/api/reviews', (_req: Request, res: Response) => {
+  res.json({ reviews: getStoredReviews() });
+});
+
+app.post('/api/reviews', (req: Request, res: Response) => {
+  const { author, location, topic, category, rating, comment } = req.body || {};
+  if (!author || !comment || typeof author !== 'string' || typeof comment !== 'string') {
+    res.status(400).json({ error: 'Author and comment are required.' });
+    return;
+  }
+
+  const sanitizedRating = Math.min(5, Math.max(1, Number(rating) || 5));
+  const newReview: StoredReviewItem = {
+    id: `rev-${Date.now()}`,
+    author: author.trim().slice(0, 80),
+    location: typeof location === 'string' && location.trim() ? location.trim().slice(0, 80) : undefined,
+    topic: typeof topic === 'string' ? topic.trim().slice(0, 140) : "Naveed's Table Experience",
+    category: typeof category === 'string' ? category.trim().slice(0, 60) : 'Site Experience',
+    rating: sanitizedRating,
+    comment: comment.trim().slice(0, 1500),
+    createdAt: new Date().toISOString(),
+    comments: [],
+  };
+
+  const current = getStoredReviews();
+  current.unshift(newReview);
+  saveReviews(current);
+  res.status(201).json({ review: newReview });
+});
+
+app.post('/api/reviews/:id/comments', (req: Request, res: Response) => {
+  const { id } = req.params;
+  const { author, text } = req.body || {};
+  if (!author || !text || typeof author !== 'string' || typeof text !== 'string') {
+    res.status(400).json({ error: 'Author and comment text are required.' });
+    return;
+  }
+
+  const current = getStoredReviews();
+  const idx = current.findIndex((r) => r.id === id);
+  if (idx === -1) {
+    res.status(404).json({ error: 'Review not found.' });
+    return;
+  }
+
+  const newComment: StoredReviewComment = {
+    id: `cmt-${Date.now()}`,
+    author: author.trim().slice(0, 80),
+    text: text.trim().slice(0, 1000),
+    createdAt: new Date().toISOString(),
+  };
+
+  current[idx] = {
+    ...current[idx],
+    comments: [...(current[idx].comments || []), newComment],
+  };
+  saveReviews(current);
+  res.status(201).json({ review: current[idx] });
+});
+
+app.delete('/api/reviews/:id', (req: Request, res: Response) => {
+  if (!isValidOwner(req)) {
+    res.status(403).json({ error: 'Owner permission required to remove reviews.' });
+    return;
+  }
+  const current = getStoredReviews();
+  const filtered = current.filter((r) => r.id !== req.params.id);
+  saveReviews(filtered);
+  res.json({ success: true });
+});
+
+// Owner-Protected Registered SEO Prompt Inspector
+app.get('/api/registered-prompt', (req: Request, res: Response) => {
+  if (!isValidOwner(req)) {
+    res.status(403).json({ error: 'Owner permission required.' });
+    return;
+  }
+  res.json({
+    siteBrand: "Naveed's Table",
+    status: 'REGISTERED_ACTIVE',
+    triggerPhrase: "Write today's best and trending topic",
+    prompt: REGISTERED_SEO_PROMPT,
+  });
+});
+
+// Automated/On-Demand Blog Generator Endpoint using Gemini AI (Owner-Restricted, uses permanently registered SEO prompt)
 app.post('/api/generate-blog', async (req: Request, res: Response) => {
   try {
+    if (!isValidOwner(req)) {
+      res.status(403).json({
+        error: 'Owner permission required. Please unlock the Owner Desk with Naveed’s passcode.',
+      });
+      return;
+    }
+
     if (!ai) {
       res.status(503).json({
         error: 'Gemini API key is not configured. Please add GEMINI_API_KEY in the Settings > Secrets panel.',
@@ -238,47 +502,46 @@ app.post('/api/generate-blog', async (req: Request, res: Response) => {
       return;
     }
 
-    const requestedTopic = req.body.topic;
+    const rawTopic = typeof req.body.topic === 'string' ? req.body.topic.trim() : '';
     const requestedCategory = req.body.category || 'Holiday Food News & Global Trends';
 
     const trendingIdeas = [
       'The 2026 European Christmas Market Price Index & Artisanal Mulled Wine Trends in Nuremberg and Strasbourg',
       'The Rising Cost of Madagascar Vanilla & Ceylon Cinnamon: How Pastry Chefs Are Sourcing Holiday Spices',
-      'Plant-Based Yuletide Revolution: Fermented Cashew Brie & Plant-Forward Julbord Across Scandinavia',
-      'Pisco-Spiced Roasted Turkey: How Lima’s Gastronomic Explosion Is Modernizing Peruvian Christmas Feasts',
-      'The Japanese Christmas Strawberry Shortcake & Fried Chicken Phenomenon: A 50-Year Cultural Retrospective',
-      'Whiskey-Soaked Figgy Puddings & Historic British Mince Pies: Recreating 17th Century Yuletide Delicacies',
+      'Plant-Based Holiday Feast Revolution: Fermented Cashew Brie & Vegetable Showstoppers Across Europe',
+      'Single-Origin Andean Cacao & Coffee: How Smallholder Farms Are Reshaping Festive Patisserie in 2026',
+      'Winter Fermentation Revival: How Ancient Probiotic Beetroot & Pickling Traditions Reclaimed Festive Dining',
+      'Coastal Seafood vs. Classic Roasts: Why Multi-Generational Households Are Blending Global Christmas Menus',
     ];
 
-    const chosenTopic = requestedTopic || trendingIdeas[Math.floor(Math.random() * trendingIdeas.length)];
+    const isAutoDailyTrigger =
+      !rawTopic || /write today'?s best and trending topic/i.test(rawTopic);
+
+    const chosenTopic = isAutoDailyTrigger
+      ? trendingIdeas[Math.floor(Math.random() * trendingIdeas.length)]
+      : rawTopic;
 
     const prompt = `
-Act as a professional journalist, SEO expert, and content strategist for "Yuletide Table" (a premier global Christmas food, traditions, and culinary news publication).
+${REGISTERED_SEO_PROMPT}
 
-Write a detailed, engaging, and fact-based blog post on the Christmas food, traditions, or holiday culinary news topic: "${chosenTopic}".
+ARTICLE BRIEF:
+- Publication: "Naveed's Table" (Founded by Naveed · Based in France)
+- Primary Research Topic: "${chosenTopic}"
+- Target SEO Category (1 of 6 niches): ${requestedCategory}
 
-Target Category: ${requestedCategory}
-
-FOLLOW THESE INSTRUCTIONS CAREFULLY:
-CONTENT STRUCTURE:
-- Create a highly clickable, emotional, and SEO-optimized headline (CTR-focused).
-- Write an engaging introduction that hooks the reader and explains why this topic is important right now.
-- Provide clear background/context so even beginners understand the topic.
-- Break the article into 2 to 3 well-structured sections using clear headings (H2) and optional subsections (H3).
-- Cover: Latest developments, Key facts/data/statistics, Expert opinions or insights, Real-world impact (on people, economy, traditions, or global trends).
-- Maintain a neutral, professional, and journalistic tone.
-- Add a "Key Takeaways" or "Quick Summary" list (3-4 points).
-- Add a short FAQ section (2-3 questions with clear answers).
-- Add internal linking suggestions to Yuletide Table recipes (/recipes/panettone-milanese, /recipes/australian-pavlova, /recipes/tourtiere-quebec, /recipes/pan-de-jamon, or /map).
-- Suggest 1-2 external authoritative sources (e.g. UNESCO Intangible Cultural Heritage, International Food Guild, FAO).
-- End with a strong conclusion and future outlook with a call-to-action.
-- Suggest image ALT text and descriptions.
+STRICT QUALITY & DEPTH MANDATES:
+- Target 2,000+ words of rich, fact-based journalistic depth across introduction, backgroundContext, 4 comprehensive H2 sections (each with H3 subsections and bulletPoints), Key Takeaways, FAQs, and Conclusion.
+- Create 4 detailed in-content sections ("sections" array length = 4), EACH including an "image" suggestion with descriptive SEO ALT text, caption, and explicit placement note (e.g., "After Introduction", "Between Section 1 & 2", etc.).
+- Create a clickable, emotional CTR-focused "title", SEO "metaTitle" (50-60 chars), "metaDescription" (150-160 chars), 1 "primaryKeyword", and 4-6 "secondaryKeywords".
+- Include 2-5 internal linking suggestions to Naveed's Table recipes (/recipes/panettone-milanese, /recipes/boeuf-wellington-noel, /recipes/wigilia-barszcz-uszka, /recipes/gravlax-lussekatter, /recipes/doro-wat-injera, /recipes/bibingka-galapong, /recipes/pavo-relleno-peru, /recipes/uk-christmas-pudding, /recipes/vienna-vanillekipferl, /recipes/japan-christmas-strawberry-shortcake, /recipes/manuka-honey-ham, /recipes/lebanon-hashweh-meghli, /map, /reviews).
+- Include 1-3 external authoritative sources (e.g. UNESCO Intangible Cultural Heritage, FAO, ICCO, Culinary Heritage Institutes).
+- Include 3-4 engaging FAQ items and a clear Call-To-Action (CTA).
 
 Return STRICT JSON complying with this exact structure:
 {
   "title": string,
-  "metaTitle": string (50-60 chars max),
-  "metaDescription": string (150-160 chars max),
+  "metaTitle": string,
+  "metaDescription": string,
   "primaryKeyword": string,
   "secondaryKeywords": string[],
   "category": string,
@@ -292,6 +555,7 @@ Return STRICT JSON complying with this exact structure:
       "subsections": [
         { "subheading": string, "content": string }
       ],
+      "bulletPoints": string[],
       "image": {
         "alt": string,
         "caption": string,
@@ -315,7 +579,7 @@ Return STRICT JSON complying with this exact structure:
 `;
 
     const response = await ai.models.generateContent({
-      model: 'gemini-3.8-flash',
+      model: 'gemini-4-hydrogen',
       contents: prompt,
       config: {
         responseMimeType: 'application/json',
@@ -333,6 +597,33 @@ Return STRICT JSON complying with this exact structure:
       .replace(/[^a-z0-9]+/g, '-')
       .replace(/(^-|-$)+/g, '') + '-' + Date.now().toString().slice(-4);
 
+    // Assign realistic culinary food photos distinct from Naveed's personal portraits
+    const featuredPhoto = CULINARY_PHOTO_POOL[Math.floor(Math.random() * CULINARY_PHOTO_POOL.length)];
+    const remainingPhotos = CULINARY_PHOTO_POOL.filter((p) => p.url !== featuredPhoto.url);
+
+    const enrichedSections = (parsedData.sections || []).map((sec: any, idx: number) => {
+      const assignedPhoto = remainingPhotos[idx % remainingPhotos.length] || featuredPhoto;
+      return {
+        heading: sec.heading || `Section ${idx + 1}`,
+        content: sec.content || '',
+        subsections: Array.isArray(sec.subsections) ? sec.subsections : [],
+        bulletPoints: Array.isArray(sec.bulletPoints) ? sec.bulletPoints : [],
+        image: sec.image
+          ? {
+              url: assignedPhoto.url,
+              alt: sec.image.alt || `${chosenTopic} culinary reference photo`,
+              caption: sec.image.caption || assignedPhoto.captionHint,
+              placement: sec.image.placement || `Inside Section ${idx + 1}`,
+            }
+          : {
+              url: assignedPhoto.url,
+              alt: `${chosenTopic} culinary detail`,
+              caption: assignedPhoto.captionHint,
+              placement: `Inside Section ${idx + 1}`,
+            },
+      };
+    });
+
     const newPost: BlogPost = {
       id: `post-${Date.now()}`,
       slug,
@@ -344,24 +635,24 @@ Return STRICT JSON complying with this exact structure:
       category: parsedData.category || requestedCategory,
       publishedAt: new Date().toISOString(),
       author: {
-        name: 'Yuletide Editorial Desk (AI Journal)',
-        role: 'Global Food Trends & Culinary Culture Bureau',
-        avatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=200&q=80',
+        name: "Naveed's Table Editorial Desk",
+        role: 'Global Food Trends & Culinary Culture Bureau · Based in France',
+        avatar: '/images/hero_christmas_feast_1794320880047.jpg',
       },
       featuredImage: {
-        url: '/images/hero_christmas_feast_1794320880047.jpg',
-        alt: parsedData.sections?.[0]?.image?.alt || 'Festive Christmas feast and holiday culinary traditions',
-        caption: parsedData.sections?.[0]?.image?.caption || 'Festive gastronomy and cultural heritage around the globe.',
+        url: featuredPhoto.url,
+        alt: parsedData.sections?.[0]?.image?.alt || featuredPhoto.captionHint,
+        caption: parsedData.sections?.[0]?.image?.caption || featuredPhoto.captionHint,
       },
-      readTimeMinutes: parsedData.readTimeMinutes || 5,
+      readTimeMinutes: parsedData.readTimeMinutes || 9,
       introduction: parsedData.introduction,
       backgroundContext: parsedData.backgroundContext,
-      sections: parsedData.sections || [],
+      sections: enrichedSections,
       keyTakeaways: parsedData.keyTakeaways || [],
       internalLinks: parsedData.internalLinks || [],
       externalSources: parsedData.externalSources || [],
       faq: parsedData.faq || [],
-      callToAction: parsedData.callToAction || 'Share your holiday culinary traditions with us.',
+      callToAction: parsedData.callToAction || 'Explore our tested recipes and share your kitchen notes in Reviews.',
       conclusion: parsedData.conclusion,
       isAiGenerated: true,
     };
@@ -374,7 +665,7 @@ Return STRICT JSON complying with this exact structure:
 
     res.json({
       success: true,
-      message: 'Article successfully researched, written, and published according to SEO specifications.',
+      message: 'Article successfully researched, written, and published according to the registered SEO prompt.',
       post: newPost,
     });
   } catch (error: any) {
@@ -388,15 +679,15 @@ Return STRICT JSON complying with this exact structure:
 // XML Sitemap for SEO & AdSense compliance
 app.get('/sitemap.xml', (_req: Request, res: Response) => {
   const posts = getStoredPosts();
-  const domain = process.env.APP_URL || 'https://yuletide-table.applet';
+  const domain = process.env.APP_URL || 'https://naveeds-table.netlify.app';
 
   const recipeSlugs = [
     'panettone-milanese',
     'dresdner-stollen',
-    'buche-de-noel',
-    'roast-goose-victorian',
+    'uk-christmas-pudding',
+    'vienna-vanillekipferl',
     'gravlax-lussekatter',
-    'uszka-red-borscht',
+    'wigilia-barszcz-uszka',
     'australian-pavlova',
     'tiger-prawns-finger-lime',
     'manuka-honey-ham',
@@ -406,10 +697,15 @@ app.get('/sitemap.xml', (_req: Request, res: Response) => {
     'pavo-relleno-peru',
     'tourtiere-quebec',
     'tamales-navidenos',
-    'bourbon-glazed-ham',
     'cranberry-wild-rice-squash',
     'bibingka-galapong',
     'doro-wat-injera',
+    'japan-christmas-strawberry-shortcake',
+    'lebanon-hashweh-meghli',
+    'boeuf-wellington-noel',
+    'poulet-roti-noel-chestnuts',
+    'christmas-herb-salmon',
+    'vegetarian-chestnut-mushroom-crown',
   ];
 
   let xml = `<?xml version="1.0" encoding="UTF-8"?>
@@ -433,6 +729,11 @@ app.get('/sitemap.xml', (_req: Request, res: Response) => {
     <loc>${domain}/blog</loc>
     <changefreq>hourly</changefreq>
     <priority>0.9</priority>
+  </url>
+  <url>
+    <loc>${domain}/reviews</loc>
+    <changefreq>daily</changefreq>
+    <priority>0.8</priority>
   </url>
   <url>
     <loc>${domain}/about</loc>
@@ -471,7 +772,7 @@ app.get('/sitemap.xml', (_req: Request, res: Response) => {
 
 // Robots.txt
 app.get('/robots.txt', (_req: Request, res: Response) => {
-  const domain = process.env.APP_URL || 'https://yuletide-table.applet';
+  const domain = process.env.APP_URL || 'https://naveeds-table.netlify.app';
   res.type('text/plain');
   res.send(`User-agent: *\nAllow: /\nSitemap: ${domain}/sitemap.xml\n`);
 });
