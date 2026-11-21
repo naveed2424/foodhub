@@ -69,6 +69,16 @@ const CULINARY_PHOTO_POOL: Array<{ url: string; captionHint: string }> = [
   { url: '/images/blog_christmas_boeuf_1794690224587.jpg', captionHint: 'Herb-crusted French Boeuf Wellington roast' },
   { url: '/images/blog_christmas_chicken_1794690225149.jpg', captionHint: 'Cast-iron French roast chicken with chestnuts and herbs' },
   { url: '/images/blog_christmas_fish_veg_1794690225620.jpg', captionHint: 'Herb-crusted Christmas salmon and chestnut mushroom crown' },
+  { url: '/images/portugal_consoada_hero_1795271113103.jpg', captionHint: 'Portuguese Consoada poached bacalhau with potatoes and greens' },
+  { url: '/images/greece_melomakarona_hero_1795271112622.jpg', captionHint: 'Greek thyme-honey Melomakarona cookies with crushed walnuts' },
+  { url: '/images/norway_ribbe_hero_1795271179855.jpg', captionHint: 'Norwegian Juleribbe crisp diamond-scored pork belly and surkal' },
+  { url: '/images/spain_turron_hero_1795271177958.jpg', captionHint: 'Artisanal Spanish Marcona almond and honey Turron de Jijona' },
+  { url: '/images/brazil_ceia_hero_1795271177873.jpg', captionHint: 'Brazilian Ceia de Natal citrus roast with Brazil nut cassava farofa' },
+  { url: '/images/puertorico_pernil_hero_1795271113351.jpg', captionHint: 'Puerto Rican crisp Pernil pork roast and Arroz con Gandules' },
+  { url: '/images/india_cafreal_hero_1795271113155.jpg', captionHint: 'Goan Christmas emerald Chicken Cafreal and semolina Baath cake' },
+  { url: '/images/nigeria_jollof_hero_1795271177401.jpg', captionHint: 'Smoky Nigerian Party Jollof rice with fried Dodo and peppered chicken' },
+  { url: '/images/korea_galbijjim_hero_1795271112603.jpg', captionHint: 'Korean pear-glazed braised Galbijjim short ribs and chestnuts' },
+  { url: '/images/czech_carp_hero_1795271113139.jpg', captionHint: 'Czech Republic golden breaded Christmas fish and Bramborovy Salat' },
 ];
 
 // Helper to get or save posts (merges & syncs INITIAL_POSTS while keeping AI-generated articles)
@@ -706,6 +716,16 @@ app.get('/sitemap.xml', (_req: Request, res: Response) => {
     'poulet-roti-noel-chestnuts',
     'christmas-herb-salmon',
     'vegetarian-chestnut-mushroom-crown',
+    'portugal-bacalhau-da-consoada',
+    'greece-melomakarona-honey-cookies',
+    'norway-juleribbe-pork-belly',
+    'spain-turron-jijona-almond',
+    'brazil-ceia-natal-farofa',
+    'puerto-rico-pernil-arroz-gandules',
+    'india-goa-christmas-cafreal-cake',
+    'nigeria-festive-jollof-chicken',
+    'korea-festive-galbijjim-feast',
+    'czech-crispy-fish-potato-salad',
   ];
 
   let xml = `<?xml version="1.0" encoding="UTF-8"?>
