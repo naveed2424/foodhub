@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { BlogPost } from '../data/posts';
 import { RECIPES_DATA, Recipe } from '../data/recipes';
 import { SUPPORTED_LANGUAGES, TRANSLATIONS } from '../data/translations';
@@ -51,10 +51,37 @@ export const BlogReaderModal: React.FC<BlogReaderModalProps> = ({
   const [isTranslating, setIsTranslating] = useState(false);
   const [copied, setCopied] = useState(false);
   const [openFaqIndices, setOpenFaqIndices] = useState<number[]>([0]);
+  const [readProgress, setReadProgress] = useState(0);
+  const scrollContainerRef = useRef<HTMLDivElement>(null);
 
   const t = TRANSLATIONS[currentLang] || TRANSLATIONS['en'];
   const activeLangObj = SUPPORTED_LANGUAGES.find((l) => l.code === currentLang) || SUPPORTED_LANGUAGES[0];
   const isRtl = activeLangObj.dir === 'rtl';
+
+  const updateReadProgress = useCallback(() => {
+    const el = scrollContainerRef.current;
+    if (!el) return;
+    const maxScroll = el.scrollHeight - el.clientHeight;
+    if (maxScroll <= 0) {
+      setReadProgress(0);
+      return;
+    }
+    const pct = Math.min(100, Math.max(0, (el.scrollTop / maxScroll) * 100));
+    setReadProgress(pct);
+  }, []);
+
+  // Reset scroll position and progress bar when switching articles or tabs
+  useEffect(() => {
+    if (scrollContainerRef.current) {
+      scrollContainerRef.current.scrollTop = 0;
+    }
+    setReadProgress(0);
+  }, [initialPost.id, activeTab]);
+
+  useEffect(() => {
+    window.addEventListener('resize', updateReadProgress);
+    return () => window.removeEventListener('resize', updateReadProgress);
+  }, [updateReadProgress]);
 
   // Automatically fetch translation when language is not English
   useEffect(() => {
@@ -153,6 +180,24 @@ export const BlogReaderModal: React.FC<BlogReaderModalProps> = ({
 
   return (
     <div className="fixed inset-0 z-50 overflow-y-auto bg-black/65 backdrop-blur-xs flex items-center justify-center p-3 sm:p-6 animate-in fade-in duration-200">
+      {/* Thin fixed-position Reading Progress Bar pinned at the top of the viewport */}
+      {activeTab === 'article' && (
+        <div
+          dir={isRtl ? 'rtl' : 'ltr'}
+          role="progressbar"
+          aria-label="Article reading progress"
+          aria-valuemin={0}
+          aria-valuemax={100}
+          aria-valuenow={Math.round(readProgress)}
+          className="fixed top-0 left-0 right-0 z-[70] h-[3px] bg-black/15 pointer-events-none print:hidden"
+        >
+          <div
+            className="h-full bg-gradient-to-r from-[#9B2C2C] via-[#B83B28] to-[#D49B35] transition-[width] duration-100 ease-out"
+            style={{ width: `${readProgress}%` }}
+          />
+        </div>
+      )}
+
       {/* Schema.org Injections (BlogPosting + FAQPage for Google & LLM Indexing) */}
       <script
         type="application/ld+json"
@@ -265,7 +310,11 @@ export const BlogReaderModal: React.FC<BlogReaderModalProps> = ({
         ) : null}
 
         {/* Modal Body */}
-        <div className="overflow-y-auto p-6 md:p-10 space-y-8">
+        <div
+          ref={scrollContainerRef}
+          onScroll={updateReadProgress}
+          className="overflow-y-auto p-6 md:p-10 space-y-8"
+        >
           {activeTab === 'article' ? (
             <article className="max-w-3xl mx-auto space-y-8">
               {/* Category & Meta Header */}

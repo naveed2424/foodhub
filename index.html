@@ -58,6 +58,48 @@
             }
           } catch (_) {}
         }
+
+        // Isolate third-party browser extension errors (e.g., MetaMask inpage.js inside sandboxed iframes)
+        // so extension failures never surface as application crashes while preserving real app errors.
+        var isExtensionError = function(msg, filename, stack) {
+          var combined = String(msg || '') + ' ' + String(filename || '') + ' ' + String(stack || '');
+          return (
+            combined.indexOf('chrome-extension://') !== -1 ||
+            combined.indexOf('moz-extension://') !== -1 ||
+            combined.indexOf('safari-extension://') !== -1 ||
+            combined.indexOf('Failed to connect to MetaMask') !== -1
+          );
+        };
+
+        window.addEventListener(
+          'error',
+          function(event) {
+            var err = event && event.error;
+            if (isExtensionError(event && event.message, event && event.filename, err && err.stack)) {
+              event.preventDefault();
+              if (typeof event.stopImmediatePropagation === 'function') {
+                event.stopImmediatePropagation();
+              }
+            }
+          },
+          true
+        );
+
+        window.addEventListener(
+          'unhandledrejection',
+          function(event) {
+            var reason = event && event.reason;
+            var msg = typeof reason === 'string' ? reason : reason && reason.message;
+            var stack = reason && reason.stack;
+            if (isExtensionError(msg, '', stack)) {
+              event.preventDefault();
+              if (typeof event.stopImmediatePropagation === 'function') {
+                event.stopImmediatePropagation();
+              }
+            }
+          },
+          true
+        );
       })();
     </script>
   </head>
