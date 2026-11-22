@@ -79,6 +79,16 @@ const CULINARY_PHOTO_POOL: Array<{ url: string; captionHint: string }> = [
   { url: '/images/nigeria_jollof_hero_1795271177401.jpg', captionHint: 'Smoky Nigerian Party Jollof rice with fried Dodo and peppered chicken' },
   { url: '/images/korea_galbijjim_hero_1795271112603.jpg', captionHint: 'Korean pear-glazed braised Galbijjim short ribs and chestnuts' },
   { url: '/images/czech_carp_hero_1795271113139.jpg', captionHint: 'Czech Republic golden breaded Christmas fish and Bramborovy Salat' },
+  { url: '/images/ireland_spicedbeef_hero_1795371579816.jpg', captionHint: 'Cork Irish 7-day juniper spiced beef with dark treacle soda bread' },
+  { url: '/images/denmark_flaeskesteg_hero_1795371577969.jpg', captionHint: 'Danish Juleaften Flaeskesteg crackling pork and Risalamande pudding' },
+  { url: '/images/hungary_beigli_hero_1795371579361.jpg', captionHint: 'Hungarian marble-glazed Walnut & Poppy Seed Bejgli holiday loaves' },
+  { url: '/images/finland_joulukinkku_hero_1795371578017.jpg', captionHint: 'Finnish mustard-crusted Joulukinkku ham and Porkkanalaatikko' },
+  { url: '/images/ukraine_kutia_hero_1795371577877.jpg', captionHint: 'Ukrainian Sviata Vecheria wheat berry Kutia and porcini Varenyky' },
+  { url: '/images/jamaica_sorrelcake_hero_1795371671488.jpg', captionHint: 'Jamaican rum-soaked Black Cake beside chilled ginger Hibiscus Sorrel' },
+  { url: '/images/ghana_waakye_hero_1795371673523.jpg', captionHint: 'Ghanaian crimson sorghum Waakye with fried Kelewele and shito tilapia' },
+  { url: '/images/vietnam_duck_hero_1795371672149.jpg', captionHint: 'Vietnamese five-spice roast duck with crispy rice-paper Cha Gio' },
+  { url: '/images/georgia_satsivi_hero_1795371673498.jpg', captionHint: 'Georgian walnut-saffron Satsivi with pomegranate and honey Gozinaki' },
+  { url: '/images/chile_panpascua_hero_1795371672791.jpg', captionHint: 'Chilean spiced Pan de Pascua cake and frosty clove-coffee Cola de Mono' },
 ];
 
 // Helper to get or save posts (merges & syncs INITIAL_POSTS while keeping AI-generated articles)
@@ -726,6 +736,16 @@ app.get('/sitemap.xml', (_req: Request, res: Response) => {
     'nigeria-festive-jollof-chicken',
     'korea-festive-galbijjim-feast',
     'czech-crispy-fish-potato-salad',
+    'ireland-spiced-beef-soda-bread',
+    'denmark-flaeskesteg-risalamande',
+    'hungary-beigli-halaszle',
+    'finland-joulukinkku-porkkanalaatikko',
+    'ukraine-kutia-varenyky',
+    'jamaica-sorrel-black-cake',
+    'ghana-waakye-kelewele',
+    'vietnam-cha-gio-roast-duck',
+    'georgia-satsivi-gozinaki',
+    'chile-cola-de-mono-pan-pascua',
   ];
 
   let xml = `<?xml version="1.0" encoding="UTF-8"?>
