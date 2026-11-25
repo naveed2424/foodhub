@@ -89,6 +89,19 @@ const CULINARY_PHOTO_POOL: Array<{ url: string; captionHint: string }> = [
   { url: '/images/vietnam_duck_hero_1795371672149.jpg', captionHint: 'Vietnamese five-spice roast duck with crispy rice-paper Cha Gio' },
   { url: '/images/georgia_satsivi_hero_1795371673498.jpg', captionHint: 'Georgian walnut-saffron Satsivi with pomegranate and honey Gozinaki' },
   { url: '/images/chile_panpascua_hero_1795371672791.jpg', captionHint: 'Chilean spiced Pan de Pascua cake and frosty clove-coffee Cola de Mono' },
+  { url: '/images/morocco_tagine_hero_1795461404024.jpg', captionHint: 'Moroccan Saffron-Prune Lamb Tagine with quince and toasted almonds (Gluten-Free)' },
+  { url: '/images/thailand_curryduck_hero_1795461404410.jpg', captionHint: 'Thai Royal Roast Duck in Pineapple-Lychee Coconut Red Curry with jasmine rice (Gluten-Free)' },
+  { url: '/images/switzerland_rosti_hero_1795461406412.jpg', captionHint: 'Swiss Alpine potato-starch Fondue Moitie-Moitie beside crispy golden Rosti (Gluten-Free)' },
+  { url: '/images/egypt_fatta_hero_1795461409422.jpg', captionHint: 'Egyptian Coptic Feast Fatta built on crisp pure corn flatbread and garlic lamb (Gluten-Free)' },
+  { url: '/images/cuba_lechon_hero_1795461408887.jpg', captionHint: 'Cuban Nochebuena Sour-Orange Mojo Lechon Asado with yuca and black-bean Congri (Gluten-Free)' },
+  { url: '/images/indonesia_rendang_hero_1795461448615.jpg', captionHint: 'Indonesian West Sumatra caramelized Beef Rendang with golden turmeric Nasi Kuning (Gluten-Free)' },
+  { url: '/images/scotland_venison_hero_1795461450304.jpg', captionHint: 'Scottish Highland venison loin with neeps and certified-GF pinhead oat Cranachan (Gluten-Free)' },
+  { url: '/images/southafrica_bobotie_hero_1795461451584.jpg', captionHint: 'South African almond-flour bound Cape Malay Bobotie with saffron Geelrys yellow rice (Gluten-Free)' },
+  { url: '/images/elsalvador_tamales_hero_1795461517532.jpg', captionHint: 'Salvadoran banana-leaf 100% corn masa chicken tamales with pickled cabbage Curtido (Gluten-Free)' },
+  { url: '/images/armenia_ghapama_hero_1795461517001.jpg', captionHint: 'Armenian festive whole honeyed pumpkin Ghapama stuffed with spiced fruit rice (Gluten-Free)' },
+  { url: '/images/blog45_panettone_crumb_hero_1795633400550.jpg', captionHint: 'Feathery honeycombed Italian Panettone beside powdered Dresden Stollen slices' },
+  { url: '/images/blog45_sourdough_dough_prep_1795633401896.jpg', captionHint: 'Artisanal sourdough lievito madre Panettone dough windowpane test' },
+  { url: '/images/blog46_gf_feast_hero_1795633402720.jpg', captionHint: 'Inclusive 100% gluten-free international banquet spread with Pavlova, Tagine, Rosti, and Ghapama' },
 ];
 
 // Helper to get or save posts (merges & syncs INITIAL_POSTS while keeping AI-generated articles)
@@ -746,6 +759,16 @@ app.get('/sitemap.xml', (_req: Request, res: Response) => {
     'vietnam-cha-gio-roast-duck',
     'georgia-satsivi-gozinaki',
     'chile-cola-de-mono-pan-pascua',
+    'morocco-saffron-lamb-tagine',
+    'thailand-roast-duck-pineapple-curry',
+    'switzerland-fondue-crispy-rosti',
+    'egypt-cornbread-lamb-fatta',
+    'cuba-lechon-yuca-congris',
+    'indonesia-beef-rendang-nasi-kuning',
+    'scotland-venison-neeps-cranachan',
+    'southafrica-cape-malay-bobotie',
+    'elsalvador-banana-leaf-corn-tamales',
+    'armenia-ghapama-stuffed-pumpkin',
   ];
 
   let xml = `<?xml version="1.0" encoding="UTF-8"?>

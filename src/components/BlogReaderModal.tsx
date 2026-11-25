@@ -29,6 +29,7 @@ interface BlogReaderModalProps {
   post: BlogPost | null;
   onClose: () => void;
   onNavigateRecipe?: (recipeSlug: string) => void;
+  onNavigateBlog?: (blogSlug: string) => void;
   onNavigateSection?: (sectionId: string) => void;
   currentLang: string;
   onLanguageChange: (langCode: string) => void;
@@ -39,6 +40,7 @@ export const BlogReaderModal: React.FC<BlogReaderModalProps> = ({
   post: initialPost,
   onClose,
   onNavigateRecipe,
+  onNavigateBlog,
   onNavigateSection,
   currentLang,
   onLanguageChange,
@@ -678,13 +680,20 @@ export const BlogReaderModal: React.FC<BlogReaderModalProps> = ({
                       <ul className="space-y-2 text-xs">
                         {displayedPost.internalLinks.map((lnk, lIdx) => {
                           const recipeMatch = lnk.url.match(/\/recipes\/([a-z0-9-]+)/i);
+                          const blogMatch = lnk.url.match(/\/blog\/([a-z0-9-]+)/i);
                           return (
                             <li key={lIdx} className="space-y-0.5">
-                              <button
-                                type="button"
-                                onClick={() => {
+                              <a
+                                href={lnk.url}
+                                onClick={(e) => {
+                                  e.preventDefault();
                                   if (recipeMatch && onNavigateRecipe) {
                                     onNavigateRecipe(recipeMatch[1]);
+                                  } else if (blogMatch && onNavigateBlog) {
+                                    onNavigateBlog(blogMatch[1]);
+                                  } else if (lnk.url.includes('reviews') && onNavigateSection) {
+                                    onClose();
+                                    onNavigateSection('reviews');
                                   } else if (lnk.url.includes('map') && onNavigateSection) {
                                     onClose();
                                     onNavigateSection('map-section');
@@ -693,10 +702,10 @@ export const BlogReaderModal: React.FC<BlogReaderModalProps> = ({
                                     onNavigateSection('recipes-section');
                                   }
                                 }}
-                                className="font-semibold text-[#9B2C2C] hover:underline text-left cursor-pointer"
+                                className="inline-flex items-center gap-1 font-semibold text-[#9B2C2C] hover:underline text-left cursor-pointer"
                               >
-                                {lnk.text}
-                              </button>
+                                <span>{lnk.text}</span>
+                              </a>
                               <p className="text-[#665A4F] leading-snug">{lnk.context}</p>
                             </li>
                           );

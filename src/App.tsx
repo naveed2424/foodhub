@@ -283,6 +283,11 @@ export default function App() {
   ];
 
   const navigateToSection = (sectionId: string) => {
+    if (sectionId === 'reviews') {
+      setCurrentPage('reviews');
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+      return;
+    }
     if (currentPage !== 'home') {
       setCurrentPage('home');
       setTimeout(() => {
@@ -1162,6 +1167,12 @@ export default function App() {
             const found = RECIPES_DATA.find((r) => r.slug === recipeSlug);
             if (found) {
               setActiveRecipe(found);
+            }
+          }}
+          onNavigateBlog={(blogSlug) => {
+            const foundPost = posts.find((p) => p.slug === blogSlug || p.id === blogSlug);
+            if (foundPost) {
+              setActiveBlogPost(foundPost);
             }
           }}
           onNavigateSection={(sectionId) => {
