@@ -102,6 +102,16 @@ const CULINARY_PHOTO_POOL: Array<{ url: string; captionHint: string }> = [
   { url: '/images/blog45_panettone_crumb_hero_1795633400550.jpg', captionHint: 'Feathery honeycombed Italian Panettone beside powdered Dresden Stollen slices' },
   { url: '/images/blog45_sourdough_dough_prep_1795633401896.jpg', captionHint: 'Artisanal sourdough lievito madre Panettone dough windowpane test' },
   { url: '/images/blog46_gf_feast_hero_1795633402720.jpg', captionHint: 'Inclusive 100% gluten-free international banquet spread with Pavlova, Tagine, Rosti, and Ghapama' },
+  { url: '/images/blog55_wellington_slice_hero_1795705292921.jpg', captionHint: 'French-British Boeuf Wellington slice revealing rosy medium-rare tenderloin, mushroom duxelles, and crisp golden puff pastry' },
+  { url: '/images/blog56_pavlova_summertable_hero_1795705293169.jpg', captionHint: 'Australian Summer Pavlova crowned with whipped cream, fresh kiwi, strawberries, and passionfruit' },
+  { url: '/images/blog57_jollof_party_hero_1795705294816.jpg', captionHint: 'Smoky Nigerian Party Jollof Rice with caramelized sweet plantains and grilled spice-rubbed chicken' },
+  { url: '/images/blog58_cafreal_baath_hero_1795705295783.jpg', captionHint: 'Goan coriander-spiced Chicken Cafreal alongside coconut semolina Baath cake' },
+  { url: '/images/blog59_finnish_feast_hero_1795705297079.jpg', captionHint: 'Finnish slow-baked Porkkanalaatikko carrot casserole next to mustard-glazed Joulukinkku roast ham' },
+  { url: '/images/blog60_japan_cake_hero_1795705379158.jpg', captionHint: 'Japanese Kurisumasu Keiki featherlight strawberry sponge shortcake finished with Chantilly cream' },
+  { url: '/images/blog61_latin_tamales_hero_1795705381133.jpg', captionHint: 'Unwrapped banana-leaf Venezuelan Hallaca and Salvadoran tamales drizzled with pickled Curtido' },
+  { url: '/images/blog62_risalamande_bejgli_hero_1795705382324.jpg', captionHint: 'Danish creamy almond Risalamande with cherry sauce beside spiraled Hungarian poppy-seed Bejgli' },
+  { url: '/images/blog63_brazil_farofa_hero_1795705383403.jpg', captionHint: 'Brazilian toasted manioc Farofa Natalina studded with raisins and cashews beside citrus-glazed tenderloin' },
+  { url: '/images/blog64_levantine_feast_hero_1795705384027.jpg', captionHint: 'Lebanese spiced lamb-rice Hashweh topped with roasted pine nuts beside warm cinnamon-caraway Meghli bowls' },
 ];
 
 // Helper to get or save posts (merges & syncs INITIAL_POSTS while keeping AI-generated articles)
