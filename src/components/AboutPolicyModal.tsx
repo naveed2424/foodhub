@@ -20,8 +20,20 @@ export const AboutPolicyModal: React.FC<AboutPolicyModalProps> = ({
   const [contactMessage, setContactMessage] = useState('');
   const [submitted, setSubmitted] = useState(false);
 
-  const handleSubmitContact = (e: React.FormEvent) => {
+  const handleSubmitContact = async (e: React.FormEvent) => {
     e.preventDefault();
+    try {
+      await fetch('/api/contact', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          name: contactName,
+          email: contactEmail,
+          subject: 'Policy / Editorial Modal Inquiry',
+          message: contactMessage,
+        }),
+      });
+    } catch (_) {}
     setSubmitted(true);
     setTimeout(() => {
       setContactName('');
@@ -111,9 +123,9 @@ export const AboutPolicyModal: React.FC<AboutPolicyModalProps> = ({
                   </p>
                 </div>
                 <div className="p-3.5 bg-[#FAF7F2] rounded-xl border border-[#EDE5D8]">
-                  <h4 className="font-bold text-[#241D17] mb-1">Daily Automated News</h4>
+                  <h4 className="font-bold text-[#241D17] mb-1">Daily Culinary Reporting</h4>
                   <p className="text-xs text-[#665A4F]">
-                    Our AI-powered journalistic engine monitors global agricultural commodity trends, holiday food prices, and sustainable festive cooking.
+                    Our editorial desk tracks global agricultural commodity shifts, seasonal food culture, and sustainable holiday cooking practices.
                   </p>
                 </div>
               </div>
@@ -123,7 +135,7 @@ export const AboutPolicyModal: React.FC<AboutPolicyModalProps> = ({
           {tab === 'editorial' && (
             <div className="space-y-4">
               <h2 className="text-2xl font-serif font-bold text-[#241D17]">
-                Editorial Integrity & Google AdSense Standards
+                Editorial Integrity & Advertising Transparency
               </h2>
               <p>
                 Naveed’s Table adheres to strict journalistic codes of conduct, ensuring all published news, market analyses, and cultural dispatches are fact-based and rigorously referenced.
@@ -132,28 +144,28 @@ export const AboutPolicyModal: React.FC<AboutPolicyModalProps> = ({
               <div className="space-y-3 pt-2">
                 <div className="p-4 bg-[#FAF7F2] rounded-xl border border-[#EDE5D8] space-y-1">
                   <h3 className="font-bold text-[#241D17] text-sm">
-                    1. Google AdSense Clear Separation Policy
+                    1. Clear Separation Between Ads &amp; Editorial Content
                   </h3>
                   <p className="text-xs text-[#665A4F]">
-                    All advertising banners and sponsored links are visibly marked with clear "Advertisement" disclosures. Ads never mimic editorial content, navigation buttons, or recipe action triggers.
+                    Advertising placements never mimic editorial content, navigation controls, or recipe action buttons, and are clearly separated from culinary instructions.
                   </p>
                 </div>
 
                 <div className="p-4 bg-[#FAF7F2] rounded-xl border border-[#EDE5D8] space-y-1">
                   <h3 className="font-bold text-[#241D17] text-sm">
-                    2. Fact-Checking & Primary Sources
+                    2. Fact-Checking &amp; Primary Sources
                   </h3>
                   <p className="text-xs text-[#665A4F]">
-                    Our economic reports cite reputable international authorities including the Food and Agriculture Organization (FAO), International Cocoa Organization (ICCO), and national culinary heritage institutes.
+                    Our reports cite reputable international authorities including the Food and Agriculture Organization (FAO), International Cocoa Organization (ICCO), and national culinary heritage institutes.
                   </p>
                 </div>
 
                 <div className="p-4 bg-[#FAF7F2] rounded-xl border border-[#EDE5D8] space-y-1">
                   <h3 className="font-bold text-[#241D17] text-sm">
-                    3. AI Attribution & Editorial Oversight
+                    3. Corrections &amp; Allergen Responsibility
                   </h3>
                   <p className="text-xs text-[#665A4F]">
-                    Articles produced via our automated daily research engine are clearly labeled with an AI Daily Journal Dispatch badge, providing full transparency to readers.
+                    Every recipe is reviewed for clarity, probe temperatures, and allergen notes. Readers can request updates or report errors anytime via afzal460@gmail.com.
                   </p>
                 </div>
               </div>

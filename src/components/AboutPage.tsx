@@ -71,8 +71,20 @@ export const AboutPage: React.FC<AboutPageProps> = ({
     } catch (_) {}
   };
 
-  const handleContactSubmit = (e: React.FormEvent) => {
+  const handleContactSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    try {
+      await fetch('/api/contact', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          name: contactName,
+          email: contactEmail,
+          subject: 'About Page / Recipe Suggestion',
+          message: contactMessage,
+        }),
+      });
+    } catch (_) {}
     setIsSent(true);
     setTimeout(() => {
       setContactName('');

@@ -1,0 +1,4 @@
+# Naveed's Table — Authorized Digital Sellers (ads.txt)
+# Replace pub-0000000000000000 or set ADSENSE_PUB_ID in your server environment
+# before submitting your publisher ID in Google AdSense.
+# Format: google.com, pub-XXXXXXXXXXXXXXXX, DIRECT, f08c47fec0942fa0

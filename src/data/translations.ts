@@ -85,7 +85,7 @@ export const TRANSLATIONS: Record<string, TranslationDictionary> = {
     navAbout: 'About Us',
     ctaExplore: 'Explore Feasts',
     ctaViewRecipes: 'Browse Recipes & Map',
-    heroTagline: 'International Gastronomy Archive · 25+ Sovereign Traditions',
+    heroTagline: 'International Gastronomy Archive · 50+ Sovereign Traditions',
     heroTitle: 'Traditional Christmas Feasts from Around the World',
     heroDescription:
       'From Italian Panettone and French-Canadian spiced Tourtière to sunlit Australian passionfruit Pavlova and Venezuelan Pan de Jamón. Discover authentic family heritage recipes, geographic origins, and daily culinary news.',

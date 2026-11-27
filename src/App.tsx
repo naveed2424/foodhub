@@ -14,6 +14,7 @@ import { AiBlogGeneratorModal } from './components/AiBlogGeneratorModal';
 import { AboutPolicyModal } from './components/AboutPolicyModal';
 import { AboutPage } from './components/AboutPage';
 import { ReviewsPage } from './components/ReviewsPage';
+import { LegalPages, LegalSection } from './components/LegalPages';
 import {
   Compass,
   Utensils,
@@ -50,7 +51,8 @@ async function sha256Hex(value: string): Promise<string> {
 }
 
 export default function App() {
-  const [currentPage, setCurrentPage] = useState<'home' | 'reviews' | 'about'>('home');
+  const [currentPage, setCurrentPage] = useState<'home' | 'reviews' | 'about' | 'legal'>('home');
+  const [legalSection, setLegalSection] = useState<LegalSection>('privacy');
   const [selectedRegion, setSelectedRegion] = useState<string>('All');
   const [selectedDietary, setSelectedDietary] = useState<string>('All');
   const [searchQuery, setSearchQuery] = useState<string>('');
@@ -63,7 +65,12 @@ export default function App() {
   const [categories, setCategories] = useState<string[]>(CATEGORIES_LIST);
   const [selectedCategoryFilter, setSelectedCategoryFilter] = useState<string>('All');
   const [scheduleStatus, setScheduleStatus] = useState<any>(null);
-  const [cookieConsentDismissed, setCookieConsentDismissed] = useState<boolean>(false);
+  const [cookieConsentDismissed, setCookieConsentDismissed] = useState<boolean>(() => {
+    if (typeof window !== 'undefined') {
+      return Boolean(localStorage.getItem('nt_cookie_consent'));
+    }
+    return false;
+  });
 
   // Multi-Language System (supports Korean, Arabic RTL, English, Spanish, French, German, Italian, Japanese)
   const [currentLang, setCurrentLang] = useState<string>(() => {
@@ -237,6 +244,147 @@ export default function App() {
       .catch((err) => console.warn('Schedule status offline:', err));
   }, []);
 
+  // Sync URL paths (/recipes/:slug, /blog/:slug, /privacy, /terms, /disclaimer, /editorial-policy, /contact, /about, /reviews)
+  const syncPathToState = (pathname: string, availablePosts: BlogPost[]) => {
+    const cleanPath = pathname.replace(/\/+$/, '') || '/';
+    if (cleanPath === '/about') {
+      setActiveRecipe(null);
+      setActiveBlogPost(null);
+      setCurrentPage('about');
+      return;
+    }
+    if (cleanPath === '/reviews') {
+      setActiveRecipe(null);
+      setActiveBlogPost(null);
+      setCurrentPage('reviews');
+      return;
+    }
+    if (
+      cleanPath === '/privacy' ||
+      cleanPath === '/terms' ||
+      cleanPath === '/disclaimer' ||
+      cleanPath === '/editorial-policy' ||
+      cleanPath === '/contact'
+    ) {
+      setActiveRecipe(null);
+      setActiveBlogPost(null);
+      setLegalSection(cleanPath.slice(1) as LegalSection);
+      setCurrentPage('legal');
+      return;
+    }
+    if (cleanPath.startsWith('/recipes/')) {
+      const slug = cleanPath.slice('/recipes/'.length);
+      const found = RECIPES_DATA.find((r) => r.slug === slug);
+      if (found) {
+        setCurrentPage('home');
+        setActiveBlogPost(null);
+        setActiveRecipe(found);
+        return;
+      }
+    }
+    if (cleanPath.startsWith('/blog/')) {
+      const slug = cleanPath.slice('/blog/'.length);
+      const found = availablePosts.find((p) => p.slug === slug || p.id === slug);
+      if (found) {
+        setCurrentPage('home');
+        setActiveRecipe(null);
+        setActiveBlogPost(found);
+        return;
+      }
+    }
+    if (cleanPath === '/map') {
+      setCurrentPage('home');
+      setTimeout(() => document.getElementById('map-section')?.scrollIntoView({ behavior: 'smooth' }), 80);
+      return;
+    }
+    if (cleanPath === '/recipes') {
+      setCurrentPage('home');
+      setTimeout(() => document.getElementById('recipes-section')?.scrollIntoView({ behavior: 'smooth' }), 80);
+      return;
+    }
+    if (cleanPath === '/blog') {
+      setCurrentPage('home');
+      setTimeout(() => document.getElementById('journal-section')?.scrollIntoView({ behavior: 'smooth' }), 80);
+      return;
+    }
+    setActiveRecipe(null);
+    setActiveBlogPost(null);
+    setCurrentPage('home');
+  };
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    syncPathToState(window.location.pathname, posts);
+    const handlePopState = () => syncPathToState(window.location.pathname, posts);
+    window.addEventListener('popstate', handlePopState);
+    return () => window.removeEventListener('popstate', handlePopState);
+  }, [posts.length]);
+
+  const pushRoute = (path: string) => {
+    if (typeof window !== 'undefined' && window.location.pathname !== path) {
+      window.history.pushState({}, '', path);
+    }
+  };
+
+  const openLegalPage = (section: LegalSection) => {
+    setActiveRecipe(null);
+    setActiveBlogPost(null);
+    setLegalSection(section);
+    setCurrentPage('legal');
+    pushRoute(`/${section}`);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
+  const handleSaveCookieConsent = (level: 'all' | 'essential') => {
+    try {
+      localStorage.setItem('nt_cookie_consent', level);
+      localStorage.setItem('nt_cookie_consent_date', new Date().toISOString());
+    } catch (_) {}
+    setCookieConsentDismissed(true);
+  };
+
+  // Dynamic Document Title, Meta Description & Canonical URL for SEO
+  useEffect(() => {
+    let title = "Naveed's Table – Global Christmas Food & Culinary Journal";
+    let description =
+      "Naveed's Table: Explore authentic traditional Christmas recipes across Europe, Asia, Africa, Oceania, and the Americas with an interactive map, dietary filters, and daily SEO-optimized culinary journalism.";
+
+    if (activeBlogPost) {
+      title = `${activeBlogPost.metaTitle || activeBlogPost.title} | Naveed's Table`;
+      description = activeBlogPost.metaDescription || activeBlogPost.introduction.slice(0, 158);
+    } else if (activeRecipe) {
+      title = `${activeRecipe.name} (${activeRecipe.country}) Recipe | Naveed's Table`;
+      description = activeRecipe.description.slice(0, 158);
+    } else if (currentPage === 'about') {
+      title = "About Naveed's Table – Editorial Standards & Culinary Heritage";
+      description =
+        "Learn about Naveed's Table, our international test kitchen, founder Naveed in France, and our culinary journalism methodology.";
+    } else if (currentPage === 'reviews') {
+      title = "Reader Reviews & Community Kitchen Notes | Naveed's Table";
+      description =
+        "Verified home cook ratings, tasting feedback, and regional holiday memories from Naveed's Table readers worldwide.";
+    } else if (currentPage === 'legal') {
+      const legalTitles: Record<LegalSection, string> = {
+        privacy: "Privacy Policy & Cookie Disclosure | Naveed's Table",
+        terms: "Terms of Service | Naveed's Table",
+        disclaimer: "Culinary, Nutritional & Advertising Disclaimer | Naveed's Table",
+        'editorial-policy': "Editorial Guidelines & Fact-Checking Policy | Naveed's Table",
+        contact: "Contact the Editorial Desk | Naveed's Table",
+      };
+      title = legalTitles[legalSection];
+    }
+
+    document.title = title;
+    const metaDesc = document.querySelector('meta[name="description"]');
+    if (metaDesc) metaDesc.setAttribute('content', description);
+    const ogTitle = document.querySelector('meta[property="og:title"]');
+    if (ogTitle) ogTitle.setAttribute('content', title);
+    const canonical = document.querySelector('link[rel="canonical"]');
+    if (canonical && typeof window !== 'undefined') {
+      canonical.setAttribute('href', window.location.origin + window.location.pathname);
+    }
+  }, [activeRecipe, activeBlogPost, currentPage, legalSection]);
+
   // Filter recipes
   const filteredRecipes = RECIPES_DATA.filter((recipe) => {
     const matchesRegion = selectedRegion === 'All' || recipe.region === selectedRegion;
@@ -285,15 +433,18 @@ export default function App() {
   const navigateToSection = (sectionId: string) => {
     if (sectionId === 'reviews') {
       setCurrentPage('reviews');
+      pushRoute('/reviews');
       window.scrollTo({ top: 0, behavior: 'smooth' });
       return;
     }
     if (currentPage !== 'home') {
       setCurrentPage('home');
+      pushRoute('/');
       setTimeout(() => {
         document.getElementById(sectionId)?.scrollIntoView({ behavior: 'smooth' });
       }, 80);
     } else {
+      pushRoute('/');
       document.getElementById(sectionId)?.scrollIntoView({ behavior: 'smooth' });
     }
   };
@@ -487,7 +638,10 @@ export default function App() {
       {currentPage === 'about' ? (
         <main className={`flex-1 ${activeRecipe || activeBlogPost ? 'print:hidden' : ''}`}>
           <AboutPage
-            onBackToHome={() => setCurrentPage('home')}
+            onBackToHome={() => {
+              setCurrentPage('home');
+              pushRoute('/');
+            }}
             isOwnerAuthorized={isOwnerAuthorized}
             onRequestOwnerUnlock={() => {
               setPasscodeError('');
@@ -499,10 +653,26 @@ export default function App() {
       ) : currentPage === 'reviews' ? (
         <main className={`flex-1 ${activeRecipe || activeBlogPost ? 'print:hidden' : ''}`}>
           <ReviewsPage
-            onBackToHome={() => setCurrentPage('home')}
+            onBackToHome={() => {
+              setCurrentPage('home');
+              pushRoute('/');
+            }}
             currentLang={currentLang}
             isOwnerAuthorized={isOwnerAuthorized}
             ownerPasscode={ownerPasscode}
+          />
+        </main>
+      ) : currentPage === 'legal' ? (
+        <main className={`flex-1 ${activeRecipe || activeBlogPost ? 'print:hidden' : ''}`}>
+          <LegalPages
+            section={legalSection}
+            onSelectSection={(sec) => openLegalPage(sec)}
+            onBackToHome={() => {
+              setCurrentPage('home');
+              pushRoute('/');
+              window.scrollTo({ top: 0, behavior: 'smooth' });
+            }}
+            onOpenCookieSettings={() => setCookieConsentDismissed(false)}
           />
         </main>
       ) : (
@@ -679,72 +849,105 @@ export default function App() {
             ) : (
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                 {filteredRecipes.map((recipe) => (
-                  <div
+                  <article
                     key={recipe.id}
-                    onClick={() => setActiveRecipe(recipe)}
-                    className="bg-white border border-[#E4D9C5] rounded-2xl overflow-hidden hover:shadow-md hover:border-[#CFBEA5] transition-all duration-200 cursor-pointer flex flex-col group"
+                    className="bg-white border border-[#E4D9C5] rounded-2xl overflow-hidden hover:shadow-md hover:border-[#CFBEA5] transition-all duration-200 flex flex-col group"
                   >
-                    <div className="relative aspect-[4/3] overflow-hidden bg-[#F0E9DF] protected-media">
-                      <img
-                        src={recipe.image}
-                        alt={recipe.imageAlt}
-                        draggable={isOwnerAuthorized}
-                        className="w-full h-full object-cover group-hover:scale-103 transition-transform duration-300 protected-media"
-                        onError={(e) => {
-                          (e.currentTarget as HTMLImageElement).src =
-                            '/images/hero_christmas_feast_1794320880047.jpg';
-                        }}
-                      />
-                      <div className="absolute top-3 left-3 bg-[#241D17]/85 backdrop-blur-xs text-white text-[11px] font-semibold px-2 py-0.5 rounded-md">
-                        {recipe.country}
-                      </div>
-                    </div>
-
-                    <div className="p-5 flex-1 flex flex-col justify-between space-y-3">
-                      <div>
-                        <div className="flex items-center gap-1.5 text-xs text-[#82532B]">
-                          <span>{recipe.region}</span>
-                          <span aria-hidden="true">·</span>
-                          <span className="italic">{recipe.localName}</span>
-                        </div>
-
-                        <h3 className="text-lg font-serif font-bold text-[#241D17] group-hover:text-[#9B2C2C] transition-colors mt-1">
-                          {recipe.name}
-                        </h3>
-
-                        <p className="text-xs text-[#665A4F] line-clamp-2 mt-1.5 leading-relaxed">
-                          {recipe.description}
-                        </p>
-                      </div>
-
-                      <div className="pt-3 border-t border-[#F2ECE1] flex items-center justify-between text-xs text-[#7A6C5F]">
-                        <div className="flex items-center gap-1.5">
-                          <Clock className="w-3.5 h-3.5" />
-                          <span className="tabular-nums">
-                            {recipe.prepTimeMinutes + recipe.cookTimeMinutes} mins
-                          </span>
-                        </div>
-
-                        <div className="text-[11px] font-medium text-[#82532B]">
-                          {recipe.difficulty}
+                    <a
+                      href={`/recipes/${recipe.slug}`}
+                      onClick={(e) => {
+                        e.preventDefault();
+                        setActiveRecipe(recipe);
+                        pushRoute(`/recipes/${recipe.slug}`);
+                      }}
+                      className="flex-1 flex flex-col cursor-pointer"
+                    >
+                      <div className="relative aspect-[4/3] overflow-hidden bg-[#F0E9DF] protected-media">
+                        <img
+                          src={recipe.image}
+                          alt={recipe.imageAlt}
+                          draggable={isOwnerAuthorized}
+                          className="w-full h-full object-cover group-hover:scale-103 transition-transform duration-300 protected-media"
+                          onError={(e) => {
+                            (e.currentTarget as HTMLImageElement).src =
+                              '/images/hero_christmas_feast_1794320880047.jpg';
+                          }}
+                        />
+                        <div className="absolute top-3 left-3 bg-[#241D17]/85 backdrop-blur-xs text-white text-[11px] font-semibold px-2 py-0.5 rounded-md">
+                          {recipe.country}
                         </div>
                       </div>
-                    </div>
-                  </div>
+
+                      <div className="p-5 flex-1 flex flex-col justify-between space-y-3">
+                        <div>
+                          <div className="flex items-center gap-1.5 text-xs text-[#82532B]">
+                            <span>{recipe.region}</span>
+                            <span aria-hidden="true">·</span>
+                            <span className="italic">{recipe.localName}</span>
+                          </div>
+
+                          <h3 className="text-lg font-serif font-bold text-[#241D17] group-hover:text-[#9B2C2C] transition-colors mt-1">
+                            {recipe.name}
+                          </h3>
+
+                          <p className="text-xs text-[#665A4F] line-clamp-2 mt-1.5 leading-relaxed">
+                            {recipe.description}
+                          </p>
+                        </div>
+
+                        <div className="pt-3 border-t border-[#F2ECE1] flex items-center justify-between text-xs text-[#7A6C5F]">
+                          <div className="flex items-center gap-1.5">
+                            <Clock className="w-3.5 h-3.5" />
+                            <span className="tabular-nums">
+                              {recipe.prepTimeMinutes + recipe.cookTimeMinutes} mins
+                            </span>
+                          </div>
+
+                          <div className="text-[11px] font-medium text-[#82532B]">
+                            {recipe.difficulty}
+                          </div>
+                        </div>
+                      </div>
+                    </a>
+                  </article>
                 ))}
               </div>
             )}
           </section>
 
-          {/* AdSense Compliant Mid-Page Banner */}
-          <div className="p-4 bg-[#FAF8F5] border border-dashed border-[#DDD2C0] rounded-xl text-center print:hidden">
-            <span className="text-[10px] uppercase tracking-wider text-[#9C8F80] block font-medium">
-              Advertisement · Google AdSense Approved Placement
-            </span>
-            <div className="h-16 flex items-center justify-center text-xs text-[#8C7D6D]">
-              Curated Artisanal Kitchenware, Holiday Spices & Gourmet Wine Pairings
+          {/* Editorial Quick Directory & Dietary Discovery Strip */}
+          <aside className="p-5 sm:p-6 bg-white border border-[#E4D9C5] rounded-2xl flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 print:hidden">
+            <div className="space-y-1">
+              <span className="text-[11px] uppercase tracking-wider text-[#9B2C2C] font-semibold block">
+                Curated Test-Kitchen Collections
+              </span>
+              <p className="text-sm font-serif font-bold text-[#241D17]">
+                Explore 100% Gluten-Free Global Feasts, Interactive World Flavor Pins, &amp; Editorial Standards
+              </p>
             </div>
-          </div>
+            <div className="flex flex-wrap items-center gap-2 shrink-0">
+              <button
+                type="button"
+                onClick={() => {
+                  setSelectedDietary('Gluten-Free');
+                  navigateToSection('recipes-section');
+                }}
+                className="px-3.5 py-2 text-xs font-semibold bg-[#FAF7F2] hover:bg-[#EFE8DD] text-[#241D17] border border-[#DDD2C0] rounded-lg transition-colors cursor-pointer"
+              >
+                Gluten-Free Archive
+              </button>
+              <a
+                href="/editorial-policy"
+                onClick={(e) => {
+                  e.preventDefault();
+                  openLegalPage('editorial-policy');
+                }}
+                className="px-3.5 py-2 text-xs font-semibold bg-[#9B2C2C] hover:bg-[#822424] text-white rounded-lg transition-colors"
+              >
+                Editorial Guidelines
+              </a>
+            </div>
+          </aside>
 
           {/* News, Current Affairs & Culinary Trends Journal */}
           <section id="journal-section" className="space-y-6 pt-6 border-t border-[#E8DEC8]">
@@ -808,59 +1011,68 @@ export default function App() {
               {filteredPosts.map((post) => (
                 <article
                   key={post.id}
-                  onClick={() => setActiveBlogPost(post)}
-                  className="bg-white border border-[#E4D9C5] rounded-2xl overflow-hidden hover:border-[#CFBEA5] hover:shadow-md transition-all duration-200 cursor-pointer flex flex-col group"
+                  className="bg-white border border-[#E4D9C5] rounded-2xl overflow-hidden hover:border-[#CFBEA5] hover:shadow-md transition-all duration-200 flex flex-col group"
                 >
-                  <div className="relative aspect-[16/9] overflow-hidden bg-[#F0E9DF] protected-media">
-                    <img
-                      src={post.featuredImage.url}
-                      alt={post.featuredImage.alt}
-                      draggable={isOwnerAuthorized}
-                      className="w-full h-full object-cover group-hover:scale-102 transition-transform duration-300 protected-media"
-                      onError={(e) => {
-                        (e.currentTarget as HTMLImageElement).src =
-                          '/images/hero_christmas_feast_1794320880047.jpg';
-                      }}
-                    />
-                    <div className="absolute top-3 left-3 bg-[#241D17]/85 backdrop-blur-xs text-white text-[11px] font-semibold px-2 py-0.5 rounded-md">
-                      {post.category}
+                  <a
+                    href={`/blog/${post.slug}`}
+                    onClick={(e) => {
+                      e.preventDefault();
+                      setActiveBlogPost(post);
+                      pushRoute(`/blog/${post.slug}`);
+                    }}
+                    className="flex-1 flex flex-col cursor-pointer"
+                  >
+                    <div className="relative aspect-[16/9] overflow-hidden bg-[#F0E9DF] protected-media">
+                      <img
+                        src={post.featuredImage.url}
+                        alt={post.featuredImage.alt}
+                        draggable={isOwnerAuthorized}
+                        className="w-full h-full object-cover group-hover:scale-102 transition-transform duration-300 protected-media"
+                        onError={(e) => {
+                          (e.currentTarget as HTMLImageElement).src =
+                            '/images/hero_christmas_feast_1794320880047.jpg';
+                        }}
+                      />
+                      <div className="absolute top-3 left-3 bg-[#241D17]/85 backdrop-blur-xs text-white text-[11px] font-semibold px-2 py-0.5 rounded-md">
+                        {post.category}
+                      </div>
                     </div>
-                  </div>
 
-                  <div className="p-6 flex-1 flex flex-col justify-between space-y-4">
-                    <div className="space-y-2">
-                      <div className="flex items-center gap-2 text-xs text-[#82532B]">
-                        <span>
-                          {new Date(post.publishedAt).toLocaleDateString('en-US', {
-                            month: 'short',
-                            day: 'numeric',
-                            year: 'numeric',
-                          })}
+                    <div className="p-6 flex-1 flex flex-col justify-between space-y-4">
+                      <div className="space-y-2">
+                        <div className="flex items-center gap-2 text-xs text-[#82532B]">
+                          <span>
+                            {new Date(post.publishedAt).toLocaleDateString('en-US', {
+                              month: 'short',
+                              day: 'numeric',
+                              year: 'numeric',
+                            })}
+                          </span>
+                          <span aria-hidden="true">·</span>
+                          <span>{post.readTimeMinutes} min read</span>
+                        </div>
+
+                        <h3 className="text-xl font-serif font-bold text-[#241D17] group-hover:text-[#9B2C2C] transition-colors leading-snug">
+                          {post.title}
+                        </h3>
+
+                        <p className="text-xs text-[#665A4F] line-clamp-3 leading-relaxed">
+                          {post.introduction}
+                        </p>
+                      </div>
+
+                      <div className="pt-3 border-t border-[#F2ECE1] flex items-center justify-between text-xs">
+                        <div className="flex items-center gap-2 text-[#7A6C5F]">
+                          <span className="font-medium text-[#241D17]">{post.author.name}</span>
+                        </div>
+
+                        <span className="font-semibold text-[#9B2C2C] flex items-center gap-1 group-hover:translate-x-0.5 transition-transform">
+                          <span>{t.readReport}</span>
+                          <ChevronRight className="w-3.5 h-3.5" />
                         </span>
-                        <span aria-hidden="true">·</span>
-                        <span>{post.readTimeMinutes} min read</span>
                       </div>
-
-                      <h3 className="text-xl font-serif font-bold text-[#241D17] group-hover:text-[#9B2C2C] transition-colors leading-snug">
-                        {post.title}
-                      </h3>
-
-                      <p className="text-xs text-[#665A4F] line-clamp-3 leading-relaxed">
-                        {post.introduction}
-                      </p>
                     </div>
-
-                    <div className="pt-3 border-t border-[#F2ECE1] flex items-center justify-between text-xs">
-                      <div className="flex items-center gap-2 text-[#7A6C5F]">
-                        <span className="font-medium text-[#241D17]">{post.author.name}</span>
-                      </div>
-
-                      <span className="font-semibold text-[#9B2C2C] flex items-center gap-1 group-hover:translate-x-0.5 transition-transform">
-                        <span>{t.readReport}</span>
-                        <ChevronRight className="w-3.5 h-3.5" />
-                      </span>
-                    </div>
-                  </div>
+                  </a>
                 </article>
               ))}
             </div>
@@ -922,63 +1134,96 @@ export default function App() {
 
             <div>
               <h4 className="text-xs font-semibold text-white uppercase tracking-wider mb-3">
-                Navigation & Editorial
+                Navigation &amp; Legal Compliance
               </h4>
               <ul className="space-y-1.5 text-xs text-[#BDB09E]">
                 <li>
-                  <button
-                    onClick={() => {
+                  <a
+                    href="/reviews"
+                    onClick={(e) => {
+                      e.preventDefault();
                       setCurrentPage('reviews');
+                      pushRoute('/reviews');
                       window.scrollTo({ top: 0, behavior: 'smooth' });
                     }}
-                    className="hover:text-white transition-colors text-left font-semibold text-white cursor-pointer"
+                    className="hover:text-white transition-colors font-semibold text-white"
                   >
-                    {t.navReviews || 'Reviews'} & Community Comments
-                  </button>
+                    {t.navReviews || 'Reviews'} &amp; Community Comments
+                  </a>
                 </li>
                 <li>
-                  <button
-                    onClick={() => {
+                  <a
+                    href="/about"
+                    onClick={(e) => {
+                      e.preventDefault();
                       setCurrentPage('about');
+                      pushRoute('/about');
                       window.scrollTo({ top: 0, behavior: 'smooth' });
                     }}
-                    className="hover:text-white transition-colors text-left font-semibold text-white cursor-pointer"
+                    className="hover:text-white transition-colors font-semibold text-white"
                   >
-                    About Us & Founder Story
-                  </button>
+                    About Us &amp; Founder Story
+                  </a>
                 </li>
                 <li>
-                  <button
-                    onClick={() => {
-                      setAboutTab('editorial');
-                      setIsAboutOpen(true);
+                  <a
+                    href="/contact"
+                    onClick={(e) => {
+                      e.preventDefault();
+                      openLegalPage('contact');
                     }}
-                    className="hover:text-white transition-colors text-left"
+                    className="hover:text-white transition-colors"
                   >
-                    AdSense & Advertising Transparency
-                  </button>
+                    Contact Editorial Desk
+                  </a>
                 </li>
                 <li>
-                  <button
-                    onClick={() => {
-                      setAboutTab('about');
-                      setIsAboutOpen(true);
+                  <a
+                    href="/editorial-policy"
+                    onClick={(e) => {
+                      e.preventDefault();
+                      openLegalPage('editorial-policy');
                     }}
-                    className="hover:text-white transition-colors text-left"
+                    className="hover:text-white transition-colors"
                   >
-                    Recipe Testing Kitchen
-                  </button>
+                    Editorial &amp; Fact-Checking Policy
+                  </a>
                 </li>
                 <li>
-                  <button
-                    onClick={() => {
-                      setAboutTab('privacy');
-                      setIsAboutOpen(true);
+                  <a
+                    href="/privacy"
+                    onClick={(e) => {
+                      e.preventDefault();
+                      openLegalPage('privacy');
                     }}
-                    className="hover:text-white transition-colors text-left"
+                    className="hover:text-white transition-colors"
                   >
-                    Privacy Policy & CCPA
-                  </button>
+                    Privacy Policy &amp; CCPA / GDPR
+                  </a>
+                </li>
+                <li>
+                  <a
+                    href="/terms"
+                    onClick={(e) => {
+                      e.preventDefault();
+                      openLegalPage('terms');
+                    }}
+                    className="hover:text-white transition-colors"
+                  >
+                    Terms of Service
+                  </a>
+                </li>
+                <li>
+                  <a
+                    href="/disclaimer"
+                    onClick={(e) => {
+                      e.preventDefault();
+                      openLegalPage('disclaimer');
+                    }}
+                    className="hover:text-white transition-colors"
+                  >
+                    Culinary &amp; Ad Disclaimer
+                  </a>
                 </li>
               </ul>
             </div>
@@ -991,7 +1236,7 @@ export default function App() {
                 Published daily under international gastronomy, agricultural economics, and cultural heritage press standards.
               </p>
               <div className="text-[11px] text-[#8C7D6D]">
-                Headquartered in France · Global bureaus across Europe, Oceania, Americas, Asia & Africa.
+                Headquartered in France · Global bureaus across Europe, Oceania, Americas, Asia &amp; Africa.
               </div>
             </div>
           </div>
@@ -1013,7 +1258,17 @@ export default function App() {
                 <span>afzal460@gmail.com</span>
               </a>
             </div>
-            <div className="flex items-center gap-4">
+            <div className="flex flex-wrap items-center gap-4">
+              <button
+                type="button"
+                onClick={() => setCookieConsentDismissed(false)}
+                className="hover:text-white transition-colors cursor-pointer"
+              >
+                Cookie Settings
+              </button>
+              <a href="/ads.txt" className="hover:text-white transition-colors">
+                ads.txt
+              </a>
               <a href="/sitemap.xml" className="hover:text-white transition-colors">
                 XML Sitemap
               </a>
@@ -1128,22 +1383,43 @@ export default function App() {
         </div>
       )}
 
-      {/* Cookie Consent Banner */}
+      {/* Cookie & GDPR / CCPA Consent Banner */}
       {!cookieConsentDismissed && (
-        <div className="fixed bottom-4 left-4 right-4 md:left-auto md:right-6 md:w-96 bg-[#241D17] text-white p-4 rounded-xl shadow-2xl border border-white/10 z-50 animate-in fade-in slide-in-from-bottom-2 duration-300 print:hidden">
-          <div className="flex items-start justify-between gap-3">
+        <div className="fixed bottom-4 left-4 right-4 md:left-auto md:right-6 md:w-[28rem] bg-[#241D17] text-white p-4 rounded-xl shadow-2xl border border-white/10 z-50 animate-in fade-in slide-in-from-bottom-2 duration-300 print:hidden">
+          <div className="space-y-3">
             <div className="text-xs space-y-1">
-              <span className="font-semibold block text-[#F3EFE9]">Cookie & Privacy Notice</span>
-              <p className="text-white/70 leading-relaxed text-[11px]">
-                We use cookies to enhance navigation and deliver relevant content in accordance with Google AdSense policies.
+              <span className="font-semibold block text-[#F3EFE9]">Cookie &amp; Privacy Notice</span>
+              <p className="text-white/75 leading-relaxed text-[11px]">
+                We use essential storage for language preferences and optional cookies for traffic measurement and Google AdSense advertising. Read our{' '}
+                <a
+                  href="/privacy"
+                  onClick={(e) => {
+                    e.preventDefault();
+                    openLegalPage('privacy');
+                  }}
+                  className="underline text-[#E0A96D] hover:text-white"
+                >
+                  Privacy &amp; Cookie Policy
+                </a>
+                .
               </p>
             </div>
-            <button
-              onClick={() => setCookieConsentDismissed(true)}
-              className="px-3 py-1 bg-[#9B2C2C] hover:bg-[#822424] text-white text-xs font-medium rounded-lg transition-colors whitespace-nowrap shrink-0 cursor-pointer"
-            >
-              Accept
-            </button>
+            <div className="flex items-center justify-end gap-2">
+              <button
+                type="button"
+                onClick={() => handleSaveCookieConsent('essential')}
+                className="px-3 py-1.5 bg-white/10 hover:bg-white/20 text-white/90 text-xs font-medium rounded-lg transition-colors cursor-pointer"
+              >
+                Essential Only
+              </button>
+              <button
+                type="button"
+                onClick={() => handleSaveCookieConsent('all')}
+                className="px-3.5 py-1.5 bg-[#9B2C2C] hover:bg-[#822424] text-white text-xs font-semibold rounded-lg transition-colors cursor-pointer"
+              >
+                Accept All
+              </button>
+            </div>
           </div>
         </div>
       )}
@@ -1152,7 +1428,10 @@ export default function App() {
       {activeRecipe && (
         <RecipeModal
           recipe={activeRecipe}
-          onClose={() => setActiveRecipe(null)}
+          onClose={() => {
+            setActiveRecipe(null);
+            pushRoute('/');
+          }}
           isOwnerAuthorized={isOwnerAuthorized}
         />
       )}
@@ -1161,18 +1440,23 @@ export default function App() {
       {activeBlogPost && (
         <BlogReaderModal
           post={activeBlogPost}
-          onClose={() => setActiveBlogPost(null)}
+          onClose={() => {
+            setActiveBlogPost(null);
+            pushRoute('/');
+          }}
           onNavigateRecipe={(recipeSlug) => {
             setActiveBlogPost(null);
             const found = RECIPES_DATA.find((r) => r.slug === recipeSlug);
             if (found) {
               setActiveRecipe(found);
+              pushRoute(`/recipes/${found.slug}`);
             }
           }}
           onNavigateBlog={(blogSlug) => {
             const foundPost = posts.find((p) => p.slug === blogSlug || p.id === blogSlug);
             if (foundPost) {
               setActiveBlogPost(foundPost);
+              pushRoute(`/blog/${foundPost.slug}`);
             }
           }}
           onNavigateSection={(sectionId) => {

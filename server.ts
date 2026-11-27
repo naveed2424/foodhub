@@ -34,6 +34,7 @@ export type { BlogPost };
 
 const POSTS_FILE = path.join(__dirname, 'posts_store.json');
 const REVIEWS_FILE = path.join(__dirname, 'reviews_store.json');
+const CONTACT_FILE = path.join(__dirname, 'contact_messages_store.json');
 const OWNER_PASSCODE = process.env.OWNER_PASSCODE || 'NAVEED2026';
 
 function isValidOwner(req: Request): boolean {
@@ -112,6 +113,16 @@ const CULINARY_PHOTO_POOL: Array<{ url: string; captionHint: string }> = [
   { url: '/images/blog62_risalamande_bejgli_hero_1795705382324.jpg', captionHint: 'Danish creamy almond Risalamande with cherry sauce beside spiraled Hungarian poppy-seed Bejgli' },
   { url: '/images/blog63_brazil_farofa_hero_1795705383403.jpg', captionHint: 'Brazilian toasted manioc Farofa Natalina studded with raisins and cashews beside citrus-glazed tenderloin' },
   { url: '/images/blog64_levantine_feast_hero_1795705384027.jpg', captionHint: 'Lebanese spiced lamb-rice Hashweh topped with roasted pine nuts beside warm cinnamon-caraway Meghli bowls' },
+  { url: '/images/blog65_pernil_cuerito_hero_1795795039914.jpg', captionHint: 'Puerto Rican blistered glass-crisp Pernil pork roast beside Arroz con Gandules and sweet maduros' },
+  { url: '/images/blog66_galbijjim_feast_hero_1795795041987.jpg', captionHint: 'Korean pear-glazed braised Galbijjim beef short ribs in ceramic ttukbaegi pot with chestnuts and jujubes' },
+  { url: '/images/blog67_melomakarona_hero_1795795042327.jpg', captionHint: 'Greek olive-oil Melomakarona cookies drenched in warm thyme honey syrup and crushed toasted walnuts' },
+  { url: '/images/blog68_tourtiere_slice_hero_1795795043239.jpg', captionHint: 'French-Canadian flaky Quebec Tourtiere spiced pork pie sliced beside ruby green tomato ketchup' },
+  { url: '/images/blog69_bibingka_hero_1795795044669.jpg', captionHint: 'Filipino banana-leaf steamed Bibingka Galapong rice cake crowned with salted duck egg and grated coconut' },
+  { url: '/images/blog70_czech_carp_hero_1795795074571.jpg', captionHint: 'Czech Republic golden crisp breaded Christmas fish with creamy Bramborovy Salat potato salad' },
+  { url: '/images/blog71_peru_pavo_hero_1795795075275.jpg', captionHint: 'Peruvian Aji Panca glazed Nochebuena roast holiday turkey with sweet raisin-nut Christmas rice' },
+  { url: '/images/blog72_portugal_bacalhau_hero_1795795196750.jpg', captionHint: 'Portuguese Consoada poached Atlantic Bacalhau salt cod with boiled potatoes, greens, and garlic olive oil' },
+  { url: '/images/blog73_vietnam_duck_hero_1795795197195.jpg', captionHint: 'Vietnamese five-spice lacquered roast duck beside crisp rice-paper Cha Gio spring rolls and herbs' },
+  { url: '/images/blog74_georgia_satsivi_hero_1795795198207.jpg', captionHint: 'Georgian marigold walnut-garlic Satsivi sauce over poached poultry beside honey walnut Gozinaki brittle' },
 ];
 
 // Helper to get or save posts (merges & syncs INITIAL_POSTS while keeping AI-generated articles)
@@ -514,6 +525,52 @@ app.delete('/api/reviews/:id', (req: Request, res: Response) => {
   res.json({ success: true });
 });
 
+// Editorial Contact & Recipe Submission Endpoint
+app.post('/api/contact', (req: Request, res: Response) => {
+  const { name, email, subject, message } = req.body || {};
+  if (
+    !name ||
+    !email ||
+    !message ||
+    typeof name !== 'string' ||
+    typeof email !== 'string' ||
+    typeof message !== 'string'
+  ) {
+    res.status(400).json({ error: 'Name, valid email address, and message are required.' });
+    return;
+  }
+
+  const trimmedEmail = email.trim();
+  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(trimmedEmail)) {
+    res.status(400).json({ error: 'Please enter a valid email address.' });
+    return;
+  }
+
+  const entry = {
+    id: `msg-${Date.now()}`,
+    name: name.trim().slice(0, 100),
+    email: trimmedEmail.slice(0, 140),
+    subject: typeof subject === 'string' && subject.trim() ? subject.trim().slice(0, 140) : 'General Editorial Inquiry',
+    message: message.trim().slice(0, 4000),
+    receivedAt: new Date().toISOString(),
+  };
+
+  try {
+    let existing: any[] = [];
+    if (fs.existsSync(CONTACT_FILE)) {
+      const raw = fs.readFileSync(CONTACT_FILE, 'utf-8');
+      const parsed = JSON.parse(raw);
+      if (Array.isArray(parsed)) existing = parsed;
+    }
+    existing.unshift(entry);
+    fs.writeFileSync(CONTACT_FILE, JSON.stringify(existing.slice(0, 500), null, 2));
+  } catch (err) {
+    console.error('Error saving contact submission:', err);
+  }
+
+  res.status(201).json({ success: true, id: entry.id });
+});
+
 // Owner-Protected Registered SEO Prompt Inspector
 app.get('/api/registered-prompt', (req: Request, res: Response) => {
   if (!isValidOwner(req)) {
@@ -720,9 +777,9 @@ Return STRICT JSON complying with this exact structure:
 });
 
 // XML Sitemap for SEO & AdSense compliance
-app.get('/sitemap.xml', (_req: Request, res: Response) => {
+app.get('/sitemap.xml', (req: Request, res: Response) => {
   const posts = getStoredPosts();
-  const domain = process.env.APP_URL || 'https://naveeds-table.netlify.app';
+  const domain = process.env.APP_URL || `${req.protocol}://${req.get('host')}`;
 
   const recipeSlugs = [
     'panettone-milanese',
@@ -800,7 +857,7 @@ app.get('/sitemap.xml', (_req: Request, res: Response) => {
   </url>
   <url>
     <loc>${domain}/blog</loc>
-    <changefreq>hourly</changefreq>
+    <changefreq>daily</changefreq>
     <priority>0.9</priority>
   </url>
   <url>
@@ -811,12 +868,32 @@ app.get('/sitemap.xml', (_req: Request, res: Response) => {
   <url>
     <loc>${domain}/about</loc>
     <changefreq>monthly</changefreq>
-    <priority>0.5</priority>
+    <priority>0.6</priority>
+  </url>
+  <url>
+    <loc>${domain}/editorial-policy</loc>
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
   </url>
   <url>
     <loc>${domain}/privacy</loc>
     <changefreq>monthly</changefreq>
-    <priority>0.3</priority>
+    <priority>0.5</priority>
+  </url>
+  <url>
+    <loc>${domain}/terms</loc>
+    <changefreq>monthly</changefreq>
+    <priority>0.5</priority>
+  </url>
+  <url>
+    <loc>${domain}/disclaimer</loc>
+    <changefreq>monthly</changefreq>
+    <priority>0.5</priority>
+  </url>
+  <url>
+    <loc>${domain}/contact</loc>
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
   </url>`;
 
   for (const r of recipeSlugs) {
@@ -844,10 +921,23 @@ app.get('/sitemap.xml', (_req: Request, res: Response) => {
 });
 
 // Robots.txt
-app.get('/robots.txt', (_req: Request, res: Response) => {
-  const domain = process.env.APP_URL || 'https://naveeds-table.netlify.app';
+app.get('/robots.txt', (req: Request, res: Response) => {
+  const domain = process.env.APP_URL || `${req.protocol}://${req.get('host')}`;
   res.type('text/plain');
   res.send(`User-agent: *\nAllow: /\nSitemap: ${domain}/sitemap.xml\n`);
+});
+
+// Authorized Digital Sellers (ads.txt) for Google AdSense verification
+app.get('/ads.txt', (_req: Request, res: Response) => {
+  const pubId = (process.env.ADSENSE_PUB_ID || '').trim();
+  res.type('text/plain');
+  if (pubId && /^pub-\d{10,20}$/.test(pubId)) {
+    res.send(`google.com, ${pubId}, DIRECT, f08c47fec0942fa0\n`);
+    return;
+  }
+  res.send(
+    `# Naveed's Table — Authorized Digital Sellers\n# Set ADSENSE_PUB_ID=pub-XXXXXXXXXXXXXXXX to serve your verified Google AdSense line.\n`
+  );
 });
 
 // Setup Vite in Dev or Static files in Production
